@@ -1,7 +1,27 @@
-import { KeyRound, LockKeyhole } from "lucide-react";
+import { LockKeyhole } from "lucide-react";
+import { ProviderConnectionCard } from "@/components/providers/provider-connection-card";
 import { requireUser } from "@/server/auth/session";
+import { listProviderConnections } from "@/server/providers/connections";
+import { providerCatalog } from "@/server/providers/validation";
+import { createSupabaseServerClient } from "@/server/supabase/client";
+
 export default async function ProviderSettingsPage() {
-  await requireUser("/settings/providers");
+  const session = await requireUser("/settings/providers");
+  const supabase = await createSupabaseServerClient();
+  const [connections, flagResult] = await Promise.all([
+    listProviderConnections(session.user.id),
+    supabase
+      ? supabase
+          .from("provider_feature_flags")
+          .select("provider,image_enabled,video_enabled")
+      : Promise.resolve({ data: [] }),
+  ]);
+  const flags = new Map(
+    (flagResult.data ?? []).map((flag) => [
+      flag.provider,
+      Boolean(flag.image_enabled || flag.video_enabled),
+    ]),
+  );
   return (
     <main className="mx-auto min-h-[calc(100vh-4rem)] max-w-4xl px-5 py-12 lg:px-8">
       <p className="text-xs font-semibold tracking-[0.18em] text-[var(--action)] uppercase">
@@ -14,26 +34,26 @@ export default async function ProviderSettingsPage() {
         Connect a supported image or video service. Credentials are encrypted
         server-side and are never returned to this browser.
       </p>
-      <section className="mt-10 rounded-3xl border border-[var(--line)] bg-[var(--panel)] p-6">
-        <div className="flex items-start gap-4">
-          <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-white/6 text-[var(--action)]">
-            <KeyRound size={19} aria-hidden="true" />
-          </span>
-          <div>
-            <h2 className="font-semibold">
-              Connections arrive in the next data phase
-            </h2>
-            <p className="mt-2 text-sm leading-6 text-[var(--text-muted)]">
-              This route is already session-protected. Secure encrypted
-              creation, validation, replacement, and deletion are implemented
-              with the provider registry in Task 04.
-            </p>
-            <p className="mt-4 inline-flex items-center gap-2 text-xs text-[var(--text-faint)]">
-              <LockKeyhole size={14} aria-hidden="true" />
-              Private by default · owner-scoped access
-            </p>
-          </div>
-        </div>
+      <div className="mt-6 flex items-center gap-2 rounded-2xl border border-[var(--line)] bg-white/2 px-4 py-3 text-xs leading-5 text-[var(--text-muted)]">
+        <LockKeyhole
+          size={15}
+          className="shrink-0 text-[var(--action)]"
+          aria-hidden="true"
+        />
+        Credentials are encrypted server-side and can only be decrypted for a
+        confirmed generation request.
+      </div>
+      <section className="mt-6 grid gap-4">
+        {providerCatalog.map((provider) => (
+          <ProviderConnectionCard
+            key={provider.id}
+            provider={provider}
+            connection={connections.find(
+              (connection) => connection.provider === provider.id,
+            )}
+            generationEnabled={flags.get(provider.id) ?? false}
+          />
+        ))}
       </section>
     </main>
   );

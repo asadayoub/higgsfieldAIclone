@@ -36,7 +36,7 @@ This file is the execution index for the creative AI platform. Work proceeds in 
       Add email/password signup and sign-in so routine access does not depend on magic-link email quotas. Include secure password validation, email verification, forgot-password and reset-password flows, session handling, duplicate-account/error states, and compatibility with the existing tester/superadmin role model. Magic links remain an optional fallback. Plan this subtask in its own workbook before implementation.
       Workbook: [`task-workbooks/03-1-email-password-auth.md`](task-workbooks/03-1-email-password-auth.md)
 
-- [ ] **T04 — Database, storage, and secure provider connections**  
+- [x] **T04 — Database, storage, and secure provider connections**
       Implement the Postgres schema, row-level security, public/private Storage buckets, encrypted BYOK credentials, and provider capability registry.  
       Workbook: [`task-workbooks/04-data-storage-provider-keys.md`](task-workbooks/04-data-storage-provider-keys.md)
 

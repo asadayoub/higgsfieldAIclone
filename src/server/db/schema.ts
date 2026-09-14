@@ -1,5 +1,6 @@
 import {
   boolean,
+  integer,
   jsonb,
   pgEnum,
   pgTable,
@@ -42,10 +43,32 @@ export const providerCredentials = pgTable("provider_credentials", {
   fingerprint: text("fingerprint").notNull(),
   lastFour: text("last_four").notNull(),
   isValid: boolean("is_valid").notNull().default(false),
+  keyVersion: integer("key_version").notNull().default(1),
+  accountLabel: text("account_label"),
+  validationError: text("validation_error"),
+  validatedAt: timestamp("validated_at", { withTimezone: true }),
+  revokedAt: timestamp("revoked_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+export const providerConnectionEvents = pgTable("provider_connection_events", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  ownerId: uuid("owner_id")
+    .notNull()
+    .references(() => profiles.id, { onDelete: "cascade" }),
+  provider: text("provider").notNull(),
+  action: text("action").notNull(),
+  outcome: text("outcome").notNull(),
+  metadata: jsonb("metadata")
+    .$type<Record<string, string | number | boolean | null>>()
+    .notNull()
+    .default({}),
+  createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
 });
@@ -90,6 +113,53 @@ export const assets = pgTable("assets", {
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
+});
+
+export const generationEvents = pgTable("generation_events", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  generationId: uuid("generation_id")
+    .notNull()
+    .references(() => generationJobs.id, { onDelete: "cascade" }),
+  ownerId: uuid("owner_id").references(() => profiles.id, {
+    onDelete: "cascade",
+  }),
+  status: jobStatusEnum("status").notNull(),
+  progress: integer("progress"),
+  errorCode: text("error_code"),
+  metadata: jsonb("metadata")
+    .$type<Record<string, string | number | boolean | null>>()
+    .notNull()
+    .default({}),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+export const assetFavorites = pgTable("asset_favorites", {
+  ownerId: uuid("owner_id")
+    .notNull()
+    .references(() => profiles.id, { onDelete: "cascade" }),
+  assetId: uuid("asset_id")
+    .notNull()
+    .references(() => assets.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+export const publications = pgTable("publications", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  assetId: uuid("asset_id")
+    .notNull()
+    .references(() => assets.id, { onDelete: "cascade" }),
+  ownerId: uuid("owner_id")
+    .notNull()
+    .references(() => profiles.id, { onDelete: "cascade" }),
+  slug: text("slug").notNull().unique(),
+  publishedAt: timestamp("published_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  revokedAt: timestamp("revoked_at", { withTimezone: true }),
 });
 
 export const providerFeatureFlags = pgTable("provider_feature_flags", {

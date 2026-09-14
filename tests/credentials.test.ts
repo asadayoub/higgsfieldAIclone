@@ -15,6 +15,17 @@ describe("provider credential protection", () => {
     expect(decryptCredential(encrypted, key)).toBe("sk-test-123456789");
   });
 
+  it("rejects tampered ciphertext and the wrong encryption key", () => {
+    const encrypted = encryptCredential("sk-test-123456789", key);
+    expect(() =>
+      decryptCredential(
+        { ...encrypted, ciphertext: `${encrypted.ciphertext.slice(0, -2)}AA` },
+        key,
+      ),
+    ).toThrow();
+    expect(() => decryptCredential(encrypted, "cd".repeat(32))).toThrow();
+  });
+
   it("redacts nested sensitive fields before logging", () => {
     expect(
       redact({
