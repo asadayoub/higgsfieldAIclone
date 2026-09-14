@@ -74,7 +74,7 @@ Build a fast, cinematic discovery surface that turns original showcase media int
 ## Verification result
 
 - `npm run format:check`, `npm run lint`, and `npm run typecheck` pass.
-- `npm test` passes all 7 files and 22 tests, including four discovery-specific cases.
+- `npm test` passes all 9 files and 30 tests, including four discovery-filter cases and four recreate-recipe cases added during the next route milestone.
 - Next production compilation completes with the supported webpack builder: 17 static/dynamic routes generated. The default Turbopack runner cannot bind its internal CSS worker port in the execution sandbox; no source diagnostic is produced, and webpack compilation plus TypeScript both pass.
 - Desktop browser QA confirmed the editorial hero, four-column media surface, readable hover recipe, stable aspect ratios, and visible card actions.
 - Live interaction QA confirmed `Noor Objects` returns three assets; `soft + video + fashion` produces only `Veil in Motion`; the URL serializes all three filters; back navigation removes the last filter and restores the correct pressed states.

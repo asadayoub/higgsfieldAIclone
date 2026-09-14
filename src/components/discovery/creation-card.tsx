@@ -2,18 +2,20 @@ import Image from "next/image";
 import Link from "next/link";
 import { ArrowUpRight, Clapperboard, WandSparkles } from "lucide-react";
 import type { Creation } from "@/content/creations";
+import {
+  creationDetailHref,
+  creationToStudioHref,
+} from "@/lib/discovery/creation-recipe";
 
 export function CreationCard({ creation }: { creation: Creation }) {
-  const studioHref = {
-    pathname: "/studio" as const,
-    query: { source: creation.id },
-  };
+  const detailHref = creationDetailHref(creation.id);
+  const studioHref = creationToStudioHref(creation);
 
   return (
     <article className="group mb-4 break-inside-avoid overflow-hidden rounded-[1.25rem] border border-white/8 bg-[var(--panel)] shadow-[0_16px_50px_rgba(0,0,0,0.16)] transition duration-300 focus-within:border-[var(--focus)] hover:-translate-y-0.5 hover:border-white/16">
       <div className="relative overflow-hidden bg-[#111315]">
         <Link
-          href={studioHref}
+          href={detailHref}
           aria-label={`Open ${creation.title} creative recipe`}
           className="block"
         >
@@ -53,7 +55,7 @@ export function CreationCard({ creation }: { creation: Creation }) {
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <Link
-              href={studioHref}
+              href={detailHref}
               className="inline-flex max-w-full items-center gap-1.5 text-sm font-semibold tracking-[-0.01em] text-white hover:text-[var(--action)]"
             >
               <span className="truncate">{creation.title}</span>

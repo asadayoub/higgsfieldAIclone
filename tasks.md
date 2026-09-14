@@ -44,7 +44,7 @@ This file is the execution index for the creative AI platform. Work proceeds in 
       Build the cinematic, searchable, filterable media gallery with strong loading, empty, error, hover, and mobile states.  
       Workbook: [`task-workbooks/05-explore-discovery.md`](task-workbooks/05-explore-discovery.md)
 
-- [ ] **T06 — Creation detail and recreate journey**  
+- [x] **T06 — Creation detail and recreate journey**  
       Build shareable creation details and carry an inspected creation’s prompt, model, preset, ratio, and mode into the studio.  
       Workbook: [`task-workbooks/06-creation-detail-recreate.md`](task-workbooks/06-creation-detail-recreate.md)
 

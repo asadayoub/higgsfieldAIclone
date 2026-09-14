@@ -32,12 +32,14 @@ export const viewport: Viewport = {
 
 export default function RootLayout({
   children,
-}: Readonly<{ children: React.ReactNode }>) {
+  modal,
+}: Readonly<{ children: React.ReactNode; modal: React.ReactNode }>) {
   return (
     <html lang="en">
       <body>
         <ToastProvider>
           <AppShell>{children}</AppShell>
+          {modal}
         </ToastProvider>
       </body>
     </html>
