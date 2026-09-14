@@ -1,6 +1,6 @@
 # T03 — Authentication, Authorization, and Superadmin
 
-Status: **Implemented — awaiting first live superadmin identity**
+Status: **Complete — implemented and verified**
 
 ## Objective
 
@@ -97,6 +97,14 @@ npm test          # 5 files, 12 tests
 npm run build     # 15 routes plus Proxy
 ```
 
-Remaining completion gate:
+Live completion verification on 2026-09-14:
 
-- Add the owner-selected email to `ADMIN_EMAIL_ALLOWLIST`, request its magic link, verify the live tester and superadmin states, then mark this task complete.
+- Added the owner-selected identity to the local, gitignored `ADMIN_EMAIL_ALLOWLIST` and completed a real Supabase magic-link exchange.
+- Confirmed the Auth user exists, the email is verified, and the matching `profiles` row persists the `superadmin` role.
+- Exercised invalid/expired-link recovery, successful return routing to `/assets`, a protected provider-settings request, and the server sign-out action in Chrome.
+- Corrected the callback to bind Supabase session cookies and mandatory private/no-store headers directly to the redirect response. The proxy applies the same cache headers when refreshing sessions.
+- Re-ran format, lint, type checking, 12 unit/integration tests, and the 15-route production build after the callback correction.
+
+Operational note:
+
+- The Supabase Free built-in mailer is intentionally limited to two auth emails per hour. Production should add a free transactional SMTP provider before broader tester onboarding; this is deployment configuration, not an authorization bypass.
