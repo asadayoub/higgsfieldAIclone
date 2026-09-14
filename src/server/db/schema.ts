@@ -91,3 +91,31 @@ export const assets = pgTable("assets", {
     .notNull()
     .defaultNow(),
 });
+
+export const providerFeatureFlags = pgTable("provider_feature_flags", {
+  provider: text("provider").primaryKey(),
+  imageEnabled: boolean("image_enabled").notNull().default(false),
+  videoEnabled: boolean("video_enabled").notNull().default(false),
+  maintenanceMessage: text("maintenance_message"),
+  updatedBy: uuid("updated_by").references(() => profiles.id),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+export const adminAuditEvents = pgTable("admin_audit_events", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  actorId: uuid("actor_id")
+    .notNull()
+    .references(() => profiles.id),
+  action: text("action").notNull(),
+  targetType: text("target_type").notNull(),
+  targetId: text("target_id").notNull(),
+  metadata: jsonb("metadata")
+    .$type<Record<string, string | number | boolean | null>>()
+    .notNull()
+    .default({}),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});

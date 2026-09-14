@@ -1,6 +1,6 @@
 # T03 — Authentication, Authorization, and Superadmin
 
-Status: **Planned — ready for implementation**
+Status: **Implemented — awaiting first live superadmin identity**
 
 ## Objective
 
@@ -75,3 +75,28 @@ All migrations remain additive with RLS enabled before access.
 ## Rollback
 
 Auth remains an enhancement around the public guided experience. If Supabase is not configured, public routes continue working while protected routes return a clear setup state rather than failing the application.
+
+## Implementation record
+
+Implemented on 2026-09-14.
+
+- Added passwordless email sign-in, callback code exchange, sign-out, session refresh proxy, safe internal return paths, and explicit invalid/expired-link states.
+- Added server-only `getSessionUser`, `requireUser`, and `requireRole` guards. Protected server components do not rely on navigation visibility or cookie presence.
+- Added protected History and provider-settings routes, a forbidden state, a role-aware account screen, and a server-authorized superadmin dashboard.
+- Added an allowlist-only superadmin bootstrap, immutable role-change audit writes, provider feature flags, and self-demotion protection.
+- Applied the two rerunnable migrations to the configured Supabase Free project. Read-only API verification returned HTTP 200 for profiles, generation jobs, provider flags, and audit events; all three storage buckets are present.
+- Signed-out browser QA confirmed `/history` resolves to `/account?next=%2Fhistory` with no private content flash.
+
+Verification passed:
+
+```text
+npm run format:check
+npm run lint
+npm run typecheck
+npm test          # 5 files, 12 tests
+npm run build     # 15 routes plus Proxy
+```
+
+Remaining completion gate:
+
+- Add the owner-selected email to `ADMIN_EMAIL_ALLOWLIST`, request its magic link, verify the live tester and superadmin states, then mark this task complete.

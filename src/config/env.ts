@@ -25,6 +25,7 @@ const serverSchema = publicSchema.extend({
       .regex(/^[a-fA-F0-9]{64}$/)
       .optional(),
   ),
+  ADMIN_EMAIL_ALLOWLIST: optionalString,
 });
 
 export type PublicEnv = z.infer<typeof publicSchema>;
