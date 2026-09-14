@@ -2,11 +2,11 @@
 
 ## Product decision
 
-Build one unusually polished, evaluator-friendly product loop rather than a shallow clone of every Higgsfield studio:
+Build one unusually polished product loop first, then expand the platform through stable provider and workflow contracts:
 
-**Explore → Creation detail → Recreate → Studio configuration → Simulated generation → Result → History**
+**Explore → Creation detail → Recreate → Studio configuration → Generation → Result → History**
 
-The experience works without authentication, payment, or API keys. It is explicitly an unofficial technical-assignment rebuild.
+The core browsing and guided experience works without authentication, payment, or API keys. Authenticated testers can connect supported model providers and run real generation workflows. The platform has its own product identity while drawing product-design lessons from the researched creative tools.
 
 ## Full production stack
 
@@ -18,20 +18,20 @@ The experience works without authentication, payment, or API keys. It is explici
 | Icons | Lucide React | Consistent lightweight iconography |
 | UI primitives | Radix primitives where needed | Accessible dialogs, tooltips, tabs, and focus management without a generic component-library look |
 | Validation | Zod | Shared validation for browser forms and server endpoints |
-| Database | Neon Serverless Postgres (Free) | Durable generation history, scales to zero, Vercel-friendly connection model |
-| ORM/migrations | Drizzle ORM + Drizzle Kit | Small runtime, typed schema, SQL transparency |
+| Platform backend | Supabase Free | Postgres, Auth, row-level security, and public/private Storage in one service |
+| ORM/migrations | Drizzle ORM + SQL migrations | Typed server queries and reviewable, additive schema evolution |
 | Hosting | Vercel Hobby (Free) | Git-based deploys, HTTPS, preview deployments, Next.js-native runtime |
-| Static media | Versioned assets in `public/` | No protected hotlinks, no object-storage account, deterministic demo |
-| Reference uploads | Browser object URLs only | Instant previews; no collection of evaluator files or storage costs |
-| Tests | Vitest + Testing Library + Playwright | Unit/component confidence plus the full evaluator journey at target breakpoints |
+| Static media | Versioned product assets + Supabase Storage | Deterministic curated media, no protected hotlinks, durable generated outputs |
+| Reference uploads | Browser previews + private Supabase Storage | Instant previews with authenticated, access-controlled persistence for real workflows |
+| Tests | Vitest + Testing Library + Playwright | Unit/component confidence plus the complete product journey at target breakpoints |
 | CI/CD | GitHub + Vercel Git integration | Public source and automatic deployments from the main branch |
 
 ### Free-tier fit
 
-- Vercel Hobby is appropriate for this personal technical assignment. It includes automatic HTTPS and enough request/build capacity for an evaluator demo. It is not the right long-term tier for a commercial production workload.
-- Neon Free supplies serverless Postgres with scale-to-zero behavior and enough storage/compute for generation metadata. No media blobs are stored in Postgres.
-- A database is an enhancement, not a single point of failure: when `DATABASE_URL` is absent, the app uses browser persistence and the complete demo remains functional.
-- The zero-key generator selects an original curated output deterministically from mode, prompt, model, and preset after realistic job transitions. The README will state this plainly.
+- Vercel Hobby supports the initial product launch with automatic HTTPS and Git-based delivery. A commercial launch will require moving to a paid plan that permits the intended usage and traffic profile.
+- Supabase Free supplies Postgres, authentication, and object storage for the initial product. Generated media is stored in Storage rather than database rows.
+- The guided mode selects an original curated output deterministically from mode, prompt, model, and preset after realistic job transitions. Live mode uses an authenticated provider connection.
+- Private generations and source references are private by default; only deliberately published showcase media is stored in the public bucket.
 
 ## Technical architecture
 
@@ -39,25 +39,28 @@ The experience works without authentication, payment, or API keys. It is explici
 
 - Server components render the shell, initial Explore catalog, metadata, and detail routes.
 - Client islands own search/filter state, modal focus, studio controls, upload previews, progress animation, toasts, and optimistic history.
-- Route handlers validate generation requests, create/update server-backed history when Neon is configured, and return deterministic simulated jobs.
-- A generated anonymous device identifier is stored in an HTTP-only cookie and represented by a one-way owner hash in the database.
+- Route handlers validate generation requests, enforce role and ownership checks, submit provider jobs, and synchronize generation state.
+- Supabase Auth identifies signed-in users; anonymous guided sessions use a random HTTP-only device identifier.
+- Provider credentials are encrypted server-side with AES-256-GCM before persistence and are never returned to the browser after saving.
 
 ### Persistence strategy
 
-1. Save a generation immediately to local storage as `queued` for instant feedback.
-2. POST the validated configuration to the generation endpoint.
-3. Advance through `queued → processing → complete` (or a deliberate test failure).
-4. Persist only metadata and the internal result asset path to Neon.
-5. Merge database and local history by generation ID, so reloads remain robust even if the free database is sleeping or unconfigured.
+1. Create a generation row as `queued` and return it optimistically to the client.
+2. Guided mode advances through the same job contract using curated local outputs.
+3. Live mode decrypts the selected provider credential only inside the server request and submits the provider job.
+4. Polling or provider webhooks advance `queued → processing → complete/failed`.
+5. Completed private media is copied into the owner-scoped private bucket; published showcase media is copied into the public bucket.
+6. The browser caches recent metadata for fast startup but Supabase remains the source of truth for authenticated history.
 
 ### Security and privacy
 
 - No provider API key in browser bundles.
-- Server-only `DATABASE_URL`.
+- Server-only Supabase service credentials and encryption master key.
 - Zod limits prompt length, enum values, and generated IDs.
 - Parameterized Drizzle queries only.
-- Anonymous histories are scoped by a random cookie-derived owner hash.
-- Uploaded references never leave the browser in the fallback implementation.
+- Anonymous guided histories are scoped by a random cookie-derived owner hash.
+- Authenticated references use owner-scoped private storage paths and signed URLs.
+- Provider credentials are encrypted at rest and redacted in all logs.
 - No remote user-provided URLs are rendered.
 
 ## Route structure
@@ -68,8 +71,12 @@ The experience works without authentication, payment, or API keys. It is explici
 /studio                   Image/video studio; accepts recreate query state
 /result/[id]              Completed/failed generation result
 /history                  Persistent anonymous generation library
+/admin                    Superadmin operations and platform health
+/settings/providers       Authenticated provider-key management
 /api/generations          Create/list generation records
-/api/generations/[id]     Read/update one generation job
+/api/generations/[id]     Read/poll one generation job
+/api/providers            Store/list redacted provider connections
+/api/webhooks/[provider]  Verify provider webhook and update jobs
 ```
 
 On large screens, creation detail will also open as a modal from Explore while retaining a shareable canonical route. On mobile it becomes a full-screen sheet/page.
@@ -116,7 +123,7 @@ HistoryPage
 ```ts
 type Generation = {
   id: string;
-  ownerId: string;
+  ownerId?: string;
   sourceCreationSlug?: string;
   mode: "image" | "video";
   prompt: string;
@@ -126,6 +133,8 @@ type Generation = {
   durationSeconds?: 5 | 10;
   status: "queued" | "processing" | "complete" | "failed";
   progress: number;
+  providerConnectionId?: string;
+  storageVisibility: "public" | "private";
   resultAsset: string;
   errorCode?: string;
   createdAt: string;
@@ -133,7 +142,7 @@ type Generation = {
 };
 ```
 
-Reference files are represented only by browser-local preview metadata and are intentionally excluded from the database.
+Reference files are previewed locally first. Guided-mode references stay browser-local; authenticated live-mode references are uploaded to owner-scoped private storage paths.
 
 ### Static catalog entities
 
@@ -153,7 +162,7 @@ Reference files are represented only by browser-local preview metadata and are i
 
 - Scaffold Next.js, TypeScript, Tailwind, linting, and test tooling.
 - Establish design tokens, fonts, responsive shell, local catalog, and original artwork.
-- Add database schema with a no-database fallback.
+- Add database, authentication, storage, role, and provider-credential foundations.
 
 ### Milestone 2 — Explore and creation detail (90 minutes)
 
@@ -181,32 +190,30 @@ Reference files are represented only by browser-local preview metadata and are i
 
 ## Explicitly out of scope
 
-- Real paid AI generation and provider billing.
-- Account creation/authentication.
+- Platform-managed AI credits and provider billing.
 - Social posting, comments, follows, and creator profiles.
 - Audio generation, Canvas, Cinema Studio, Marketing Studio, full project authoring, and collaborative folders.
-- Permanent uploaded-reference storage.
+- Public sharing of private source references.
 - Exact reproduction of Higgsfield branding or protected media.
 
 ## Risks and fallbacks
 
 | Risk | Mitigation |
 | --- | --- |
-| Neon project or credentials are unavailable at deploy time | Local-storage adapter keeps the full journey working; `DATABASE_URL` is optional |
-| Free database cold start | Optimistic local history renders first and syncs in the background |
+| Supabase project or credentials are unavailable at deploy time | Guided mode stays available; authenticated persistence and live providers report a clear unavailable state |
+| Free database cold start | Optimistic recent-history cache renders first and syncs in the background |
 | Large media harms page performance | Locally optimized WebP/AVIF assets, explicit dimensions, lazy loading, limited above-fold preload |
-| A simulated generator feels fake | Realistic staged timing, honest label, prompt/config-derived deterministic result, metadata, failure/retry path |
+| Guided generation is mistaken for a live provider | Persistent mode badge, explicit result provenance, and separate provider connection workflow |
 | Scope pressure | Protect the complete vertical slice; omit social breadth and extra studios |
 | Mobile composer becomes crowded | Full-screen mobile studio with sticky Generate action and collapsible advanced controls |
-| Vercel Hobby constraints | Keep route handlers short, avoid long-running functions, and simulate progress in the browser |
+| Vercel Hobby constraints | Keep route handlers short and use submit/poll or verified webhooks for long-running provider jobs |
 
 ## Deployment checklist
 
-- Create free Neon project and run Drizzle migrations.
-- Add `DATABASE_URL` to Vercel only; never commit it.
+- Create the Supabase project, public/private Storage buckets, Auth configuration, and additive migrations.
+- Add Supabase server credentials and `PROVIDER_KEY_ENCRYPTION_SECRET` to Vercel only; never commit them.
 - Import the public GitHub repository into Vercel.
 - Confirm production HTTPS route in a private browser session.
-- Confirm the app works with and without `DATABASE_URL`.
+- Confirm guided mode works without a provider key and live mode works with a tester-owned provider key.
 - Confirm `.agent-logs/` is present in the public repository.
 - Record a camera-on walkthrough under five minutes.
-

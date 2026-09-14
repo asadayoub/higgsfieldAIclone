@@ -12,7 +12,7 @@ Higgsfield is a dark, media-first creative suite that combines three product lay
 2. Creation: focused Image, Video, Effects, and studio workspaces with model-specific controls.
 3. Library: a personal asset system that organizes generated image, video, and audio outputs into folders.
 
-The core product loop is not “open a blank generator.” It is “discover something desirable, understand how it was made, recreate it with the original settings, then find the result in history.” The rebuild will concentrate on that complete loop.
+The core product loop is not “open a blank generator.” It is “discover something desirable, understand how it was made, recreate it with the original settings, then find the result in history.” The product will concentrate on that complete loop.
 
 ## Information architecture and navigation
 
@@ -196,7 +196,7 @@ Screenshot: [`screenshots/04-image-studio.png`](screenshots/04-image-studio.png)
 ### Error
 
 - Media playback exposes an “Unable to play media” fallback and manual play control.
-- The rebuild should add explicit retry affordances for failed simulated jobs and failed images.
+- The product should add explicit retry affordances for failed jobs and failed media loads.
 
 ### Success
 
@@ -237,14 +237,14 @@ It will include:
 - Accessible creation detail modal with prompt/configuration metadata.
 - Recreate action that prefills a unified studio.
 - Image and Video modes with prompt, model/preset, aspect ratio, and reference preview.
-- Honest zero-key generation simulator with queued, processing, success, and deterministic failure/retry states.
+- Guided generation with queued, processing, success, and deterministic failure/retry states, plus authenticated live-provider workflows.
 - Result metadata/actions and persistent anonymous history.
 - Empty states, skeletons, tooltips, toasts, focus management, and mobile navigation.
 
 ## Intentionally omitted
 
-- Real third-party image/video generation: it introduces paid credentials, unpredictable latency/cost, and deployment risk. The integration seam will be documented.
-- Authentication and billing: not necessary for an evaluator to complete the core journey and would add external setup friction.
+- Broad provider coverage: the first release will support one production image adapter and one production video adapter behind a stable provider contract.
+- Platform billing and managed credits: users bring their own provider credentials for the first release.
 - Community posting, likes, comments, follows, and social graphs: broad but shallow relative to the judged vertical slice.
 - Full project authoring, folders, collaboration, Cinema Studio, Marketing Studio, audio, canvas, and editing tools: separate products in their own right.
 - Dozens of real model-specific schemas: representative model/preset options communicate the product judgment without pretending to support unavailable providers.
@@ -256,4 +256,3 @@ It will include:
 - The final Generate actions showed non-zero credit costs. They were not submitted because doing so would consume the user’s balance.
 - Locally saved screenshots of public pages are included above. Authenticated video/effects/library screens were also visually inspected in the live browser and are described in this document.
 - No protected Higgsfield media will be copied into the implementation.
-
