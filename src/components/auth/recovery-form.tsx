@@ -1,29 +1,20 @@
 "use client";
 
 import { useActionState } from "react";
-import { Mail, Sparkles } from "lucide-react";
-import { requestMagicLink, type AuthFormState } from "@/app/auth/actions";
+import { Mail, Send } from "lucide-react";
+import { requestPasswordReset, type AuthFormState } from "@/app/auth/actions";
 import { Button } from "@/components/ui/button";
 
 const initialState: AuthFormState = { status: "idle" };
 
-export function MagicLinkForm({
-  next,
-  compact = false,
-}: {
-  next: string;
-  compact?: boolean;
-}) {
+export function RecoveryForm() {
   const [state, action, pending] = useActionState(
-    requestMagicLink,
+    requestPasswordReset,
     initialState,
   );
+
   return (
-    <form
-      action={action}
-      className={compact ? "mt-4 space-y-4" : "mt-8 space-y-4"}
-    >
-      <input type="hidden" name="next" value={next} />
+    <form action={action} className="mt-7 space-y-4">
       <label className="block">
         <span className="mb-2 block text-xs font-medium text-[var(--text-muted)]">
           Email address
@@ -50,25 +41,21 @@ export function MagicLinkForm({
         disabled={pending}
         className="w-full"
       >
-        <Sparkles size={16} aria-hidden="true" />
-        {pending ? "Sending secure link…" : "Email me a sign-in link"}
+        <Send size={16} aria-hidden="true" />
+        {pending ? "Sending recovery email…" : "Send recovery email"}
       </Button>
       {state.message ? (
         <p
           role={state.status === "error" ? "alert" : "status"}
           className={
             state.status === "error"
-              ? "text-sm text-[var(--danger)]"
-              : "text-sm text-[var(--success)]"
+              ? "text-sm leading-6 text-[var(--danger)]"
+              : "text-sm leading-6 text-[var(--success)]"
           }
         >
           {state.message}
         </p>
       ) : null}
-      <p className="text-xs leading-5 text-[var(--text-faint)]">
-        No password required. The link expires automatically and returns you to
-        the page you requested.
-      </p>
     </form>
   );
 }

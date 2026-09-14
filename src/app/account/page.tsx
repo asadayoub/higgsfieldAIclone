@@ -1,19 +1,26 @@
 import Link from "next/link";
 import { KeyRound, LogOut, ShieldCheck } from "lucide-react";
 import { signOut } from "@/app/auth/actions";
+import { AccountAccessForm } from "@/components/auth/account-access-form";
 import { MagicLinkForm } from "@/components/auth/magic-link-form";
 import { Button } from "@/components/ui/button";
 import { safeReturnPath } from "@/server/auth/return-path";
 import { getSessionUser } from "@/server/auth/session";
 
 type AccountPageProps = {
-  searchParams: Promise<{ next?: string; error?: string }>;
+  searchParams: Promise<{
+    next?: string;
+    error?: string;
+    mode?: string;
+    notice?: string;
+  }>;
 };
 
 export default async function AccountPage({ searchParams }: AccountPageProps) {
   const params = await searchParams;
   const session = await getSessionUser();
   const next = safeReturnPath(params.next, "/assets");
+  const mode = params.mode === "signup" ? "signup" : "signin";
   if (!session)
     return (
       <main className="grid min-h-[calc(100vh-4rem)] place-items-center px-5 py-12">
@@ -25,11 +32,12 @@ export default async function AccountPage({ searchParams }: AccountPageProps) {
             Private workspace
           </p>
           <h1 className="mt-3 text-4xl font-semibold tracking-[-0.05em]">
-            Sign in to keep your work.
+            {mode === "signup" ? "Create your workspace." : "Welcome back."}
           </h1>
           <p className="mt-3 text-sm leading-6 text-[var(--text-muted)]">
-            Guided creation stays open to everyone. Sign in only when you want
-            private history or a live provider connection.
+            {mode === "signup"
+              ? "Save private generations, connect live providers, and return to your creative history."
+              : "Sign in with your password to open private history and live provider connections."}
           </p>
           {params.error ? (
             <p
@@ -40,7 +48,20 @@ export default async function AccountPage({ searchParams }: AccountPageProps) {
               below.
             </p>
           ) : null}
-          <MagicLinkForm next={next} />
+          <AccountAccessForm mode={mode} next={next} />
+          <div className="my-6 flex items-center gap-3" aria-hidden="true">
+            <span className="h-px flex-1 bg-[var(--line)]" />
+            <span className="text-[10px] font-semibold tracking-[0.16em] text-[var(--text-faint)] uppercase">
+              Or
+            </span>
+            <span className="h-px flex-1 bg-[var(--line)]" />
+          </div>
+          <details className="group rounded-2xl border border-[var(--line)] bg-white/2 p-4">
+            <summary className="cursor-pointer list-none text-center text-sm font-medium text-[var(--text-muted)] hover:text-[var(--text)]">
+              Use a passwordless email link
+            </summary>
+            <MagicLinkForm next={next} compact />
+          </details>
         </section>
       </main>
     );
@@ -54,6 +75,14 @@ export default async function AccountPage({ searchParams }: AccountPageProps) {
         Account
       </h1>
       <section className="mt-10 rounded-3xl border border-[var(--line)] bg-[var(--panel)] p-6">
+        {params.notice === "password_updated" ? (
+          <p
+            role="status"
+            className="mb-6 rounded-xl border border-[color-mix(in_srgb,var(--success)_35%,transparent)] bg-[color-mix(in_srgb,var(--success)_8%,transparent)] p-3 text-sm text-[var(--success)]"
+          >
+            Your password has been updated.
+          </p>
+        ) : null}
         <div className="flex flex-wrap items-start justify-between gap-5">
           <div>
             <span className="inline-flex items-center gap-2 rounded-full bg-[color-mix(in_srgb,var(--success)_12%,transparent)] px-3 py-1.5 text-xs text-[var(--success)]">
