@@ -1,0 +1,24 @@
+# dependencies and build output
+/node_modules
+/.next
+/out
+/coverage
+/playwright-report
+/test-results
+
+# local configuration and secrets
+.env
+.env.*
+!.env.example
+
+# tooling
+*.tsbuildinfo
+.vercel
+.DS_Store
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# Agent capture is intentionally versioned.
+!.agent-logs/
+!.agent-logs/**

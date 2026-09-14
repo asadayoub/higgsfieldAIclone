@@ -37,4 +37,3 @@ Create focused Image and Video workspaces that make model configuration powerful
 ## Live-reference checks
 
 - Revalidate current image/video model pickers, ratio behavior, and compact settings density while implementing each control group.
-

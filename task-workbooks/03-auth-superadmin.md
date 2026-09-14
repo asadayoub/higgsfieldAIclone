@@ -36,4 +36,3 @@ Introduce secure user sessions and role-aware product surfaces while keeping the
 ## Risks
 
 - Bootstrapping the first superadmin must not become a public registration path. Use an explicit allowlisted email or one-time SQL promotion documented for the owner.
-

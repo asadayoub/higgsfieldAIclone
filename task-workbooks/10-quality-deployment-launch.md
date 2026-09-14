@@ -54,4 +54,3 @@ Manual production scenarios:
 
 - Free-tier quotas can be exhausted. Document quotas, surface unavailable states, and keep guided mode operational.
 - A faulty release rolls back through Vercel’s previous production deployment; additive database migrations remain compatible with the prior application version.
-

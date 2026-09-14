@@ -35,4 +35,3 @@ Turn completed generations into durable, inspectable assets with clear privacy, 
 ## Live-reference checks
 
 - Validate result action hierarchy, asset empty state, density controls, and history loading patterns.
-

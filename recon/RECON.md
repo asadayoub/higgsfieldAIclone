@@ -2,7 +2,7 @@
 
 Research date: 2026-09-14
 
-This document records direct browser inspection of the live Higgsfield product before implementation. The inspected account was already authenticated. No paid-credit generation was submitted: the final Generate actions visibly consumed account credits, so the form, configuration, history, loading, and result surfaces were inspected without spending the account balance.
+This document records direct browser inspection of the live Higgsfield product before implementation. The inspected account was already authenticated. One FLUX.2 Pro image generation was submitted with explicit approval so the asynchronous lifecycle, completed result inspector, and library handoff could be observed end to end.
 
 ## Executive summary
 
@@ -101,8 +101,23 @@ Screenshot: [`screenshots/03-community-shots.png`](screenshots/03-community-shot
 - The tray combines reference upload, prompt, model, aspect ratio, quality, resolution, output count, and Generate without opening a separate settings page.
 - The model selector is a large searchable command palette. Featured models appear first, followed by the complete catalog. Each row has a name, capability summary, and optional New/Premium badge.
 - Configuration is model-dependent. The inspected GPT Image 2 setup exposed Auto ratio, High quality, 2K resolution, an Auto control, quantity, and a visible credit price.
+- A live FLUX.2 Pro run used a 3:4 ratio, 1K quality, one output, and a one-credit cost. Submission immediately replaced the empty result rail with a cancellable `Processing` card.
+- The processing state remained visible for roughly five minutes. The composer stayed usable and continued to show the exact prompt, model, ratio, quality, quantity, and generation price.
+- Completion happened in place: the progress card became a selectable image without a route change or manual refresh.
 
 Screenshot: [`screenshots/04-image-studio.png`](screenshots/04-image-studio.png)
+
+Live-flow screenshots: [`screenshots/07-image-submit.png`](screenshots/07-image-submit.png), [`screenshots/08-image-processing.png`](screenshots/08-image-processing.png), and [`screenshots/09-image-result.png`](screenshots/09-image-result.png)
+
+### Completed image inspector
+
+- Selecting a completed image opens an `Asset showcase` dialog with a large media stage and a right-side inspector.
+- The Info tab exposes the full prompt, model, quality, pixel dimensions, creation time, and author.
+- Primary follow-on actions are Turn to video, Recreate, Reference, Download, Like, comments, and overflow.
+- The Edit tab changes the media stage into an annotation workspace with selection, hand, regional edit, lasso, pen, eraser, shapes, zoom controls, edit history, reference input, and an edit prompt.
+- Additional edit tools include layer decomposition, text editing, expand/crop, upscale, background removal, color grading, enhancement, relighting, and camera angles.
+
+Screenshots: [`screenshots/10-image-result-detail.png`](screenshots/10-image-result-detail.png) and [`screenshots/11-image-edit-tools.png`](screenshots/11-image-edit-tools.png)
 
 ### Video studio
 
@@ -126,6 +141,7 @@ Screenshot: [`screenshots/04-image-studio.png`](screenshots/04-image-studio.png)
 - Folder creation is contextual to the signed-in identity.
 - The empty state says exactly where generations will appear and offers a direct Generate CTA.
 - Empty-state illustration and generous whitespace keep the screen from feeling broken.
+- Immediately after the successful live generation, the studio result was complete and inspectable while Assets still showed zero items. This may be an indexing delay or a product inconsistency; the rebuild should make generation persistence and asset visibility one coherent transaction, with an explicit indexing/retry state if storage and metadata briefly diverge.
 
 ## Visual language
 
@@ -252,7 +268,8 @@ It will include:
 
 ## Research limitations and safeguards
 
-- The account was already authenticated, so no signup/OTP/CAPTCHA handoff was required.
-- The final Generate actions showed non-zero credit costs. They were not submitted because doing so would consume the user’s balance.
+- The account was already authenticated. Higgsfield presented a browser verification challenge before the live run; control was handed to the user to complete it.
+- Exactly one one-credit FLUX.2 Pro image was submitted after explicit approval. The account balance changed from 10 to 9 credits, confirming the charge.
+- No video generation has been submitted. Its exact cost and final execution remain separately permission-gated.
 - Locally saved screenshots of public pages are included above. Authenticated video/effects/library screens were also visually inspected in the live browser and are described in this document.
 - No protected Higgsfield media will be copied into the implementation.

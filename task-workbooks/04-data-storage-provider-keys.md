@@ -37,4 +37,3 @@ Make Supabase the durable product backend and let authenticated testers safely b
 ## Risks
 
 - Credential storage increases security responsibility. Keep provider keys optional, owner-scoped, encrypted, and deletable; document that a dedicated secrets vault is the later production upgrade.
-

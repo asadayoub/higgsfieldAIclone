@@ -1,6 +1,6 @@
 # T02 — Design System and Responsive Application Shell
 
-Status: **Draft plan — refine before implementation**
+Status: **Planned — ready for implementation**
 
 ## Objective
 
@@ -38,3 +38,43 @@ Create the platform’s own dark, cinematic design language and responsive navig
 - Over-custom animation can harm speed and accessibility; use short transitions and honor reduced motion.
 - A full component library is unnecessary; build only primitives required by planned screens.
 
+## Final implementation plan
+
+### Visual tokens
+
+- Promote the foundation colors into semantic variables for page, panel, raised control, border, primary and muted text, lime action, warning, error, success, and focus.
+- Establish compact navigation and metadata typography plus a large editorial display scale without adding an external font dependency.
+- Define shared radii, hairlines, shadows, blur, content widths, and motion timing in global styles.
+
+### App structure
+
+- Desktop: persistent 64px global navigation with creation/discovery links and right-side search, library, and account entry points.
+- Mobile: compact top bar with an accessible drawer and sticky Create action.
+- Route shell: consistent main landmark, skip link, focus restoration boundary, and room for route-level loading/error states.
+- Global overlays: keyboard-search palette, toast region, tooltip primitive, and modal/dialog foundation.
+
+### Components and files
+
+```text
+src/components/shell/app-header.tsx
+src/components/shell/mobile-menu.tsx
+src/components/shell/search-command.tsx
+src/components/ui/button.tsx
+src/components/ui/dialog.tsx
+src/components/ui/tooltip.tsx
+src/components/ui/toast.tsx
+src/components/ui/skeleton.tsx
+src/app/loading.tsx
+src/app/error.tsx
+src/app/not-found.tsx
+```
+
+### Verification additions
+
+- Component tests for keyboard dismissal, focus return, and menu labeling.
+- Browser smoke checks at 1440px, 1024px, and 390px.
+- Confirm no horizontal overflow, no hidden focus, and correct reduced-motion behavior.
+
+## Rollback
+
+Keep primitives composable and avoid coupling shell state to feature state, allowing later screens to be removed independently.

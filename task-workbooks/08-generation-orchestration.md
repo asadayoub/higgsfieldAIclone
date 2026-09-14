@@ -38,4 +38,3 @@ Run guided and real-provider workflows through one reliable asynchronous job mod
 
 - Provider APIs differ substantially. Keep transformations inside adapters and keep the internal job contract narrow.
 - Vercel Hobby duration limits require submit/poll or webhook flows rather than waiting synchronously.
-

@@ -35,4 +35,3 @@ Let users inspect the creative recipe behind a piece and reproduce it without ma
 ## Live-reference checks
 
 - Validate prompt presentation, action placement, and detail-to-studio transition against current production behavior.
-

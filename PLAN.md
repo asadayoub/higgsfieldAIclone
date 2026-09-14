@@ -10,21 +10,21 @@ The core browsing and guided experience works without authentication, payment, o
 
 ## Full production stack
 
-| Layer | Choice | Why |
-| --- | --- | --- |
-| Framework | Next.js App Router + React + TypeScript | First-class Vercel deployment, server rendering, route handlers, typed UI |
-| Styling | Tailwind CSS | Fast responsive iteration and a small consistent design token surface |
-| Motion | Motion for React | Polished modal, gallery, job, and route-state transitions |
-| Icons | Lucide React | Consistent lightweight iconography |
-| UI primitives | Radix primitives where needed | Accessible dialogs, tooltips, tabs, and focus management without a generic component-library look |
-| Validation | Zod | Shared validation for browser forms and server endpoints |
-| Platform backend | Supabase Free | Postgres, Auth, row-level security, and public/private Storage in one service |
-| ORM/migrations | Drizzle ORM + SQL migrations | Typed server queries and reviewable, additive schema evolution |
-| Hosting | Vercel Hobby (Free) | Git-based deploys, HTTPS, preview deployments, Next.js-native runtime |
-| Static media | Versioned product assets + Supabase Storage | Deterministic curated media, no protected hotlinks, durable generated outputs |
-| Reference uploads | Browser previews + private Supabase Storage | Instant previews with authenticated, access-controlled persistence for real workflows |
-| Tests | Vitest + Testing Library + Playwright | Unit/component confidence plus the complete product journey at target breakpoints |
-| CI/CD | GitHub + Vercel Git integration | Public source and automatic deployments from the main branch |
+| Layer             | Choice                                      | Why                                                                                               |
+| ----------------- | ------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| Framework         | Next.js App Router + React + TypeScript     | First-class Vercel deployment, server rendering, route handlers, typed UI                         |
+| Styling           | Tailwind CSS                                | Fast responsive iteration and a small consistent design token surface                             |
+| Motion            | Motion for React                            | Polished modal, gallery, job, and route-state transitions                                         |
+| Icons             | Lucide React                                | Consistent lightweight iconography                                                                |
+| UI primitives     | Radix primitives where needed               | Accessible dialogs, tooltips, tabs, and focus management without a generic component-library look |
+| Validation        | Zod                                         | Shared validation for browser forms and server endpoints                                          |
+| Platform backend  | Supabase Free                               | Postgres, Auth, row-level security, and public/private Storage in one service                     |
+| ORM/migrations    | Drizzle ORM + SQL migrations                | Typed server queries and reviewable, additive schema evolution                                    |
+| Hosting           | Vercel Hobby (Free)                         | Git-based deploys, HTTPS, preview deployments, Next.js-native runtime                             |
+| Static media      | Versioned product assets + Supabase Storage | Deterministic curated media, no protected hotlinks, durable generated outputs                     |
+| Reference uploads | Browser previews + private Supabase Storage | Instant previews with authenticated, access-controlled persistence for real workflows             |
+| Tests             | Vitest + Testing Library + Playwright       | Unit/component confidence plus the complete product journey at target breakpoints                 |
+| CI/CD             | GitHub + Vercel Git integration             | Public source and automatic deployments from the main branch                                      |
 
 ### Free-tier fit
 
@@ -198,15 +198,15 @@ Reference files are previewed locally first. Guided-mode references stay browser
 
 ## Risks and fallbacks
 
-| Risk | Mitigation |
-| --- | --- |
+| Risk                                                           | Mitigation                                                                                                 |
+| -------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
 | Supabase project or credentials are unavailable at deploy time | Guided mode stays available; authenticated persistence and live providers report a clear unavailable state |
-| Free database cold start | Optimistic recent-history cache renders first and syncs in the background |
-| Large media harms page performance | Locally optimized WebP/AVIF assets, explicit dimensions, lazy loading, limited above-fold preload |
-| Guided generation is mistaken for a live provider | Persistent mode badge, explicit result provenance, and separate provider connection workflow |
-| Scope pressure | Protect the complete vertical slice; omit social breadth and extra studios |
-| Mobile composer becomes crowded | Full-screen mobile studio with sticky Generate action and collapsible advanced controls |
-| Vercel Hobby constraints | Keep route handlers short and use submit/poll or verified webhooks for long-running provider jobs |
+| Free database cold start                                       | Optimistic recent-history cache renders first and syncs in the background                                  |
+| Large media harms page performance                             | Locally optimized WebP/AVIF assets, explicit dimensions, lazy loading, limited above-fold preload          |
+| Guided generation is mistaken for a live provider              | Persistent mode badge, explicit result provenance, and separate provider connection workflow               |
+| Scope pressure                                                 | Protect the complete vertical slice; omit social breadth and extra studios                                 |
+| Mobile composer becomes crowded                                | Full-screen mobile studio with sticky Generate action and collapsible advanced controls                    |
+| Vercel Hobby constraints                                       | Keep route handlers short and use submit/poll or verified webhooks for long-running provider jobs          |
 
 ## Deployment checklist
 

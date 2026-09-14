@@ -34,4 +34,3 @@ Build a fast, cinematic discovery surface that turns original showcase media int
 ## Live-reference checks
 
 - Revisit card density, hover actions, skeleton geometry, and mobile discovery behavior before final styling.
-

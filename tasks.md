@@ -20,45 +20,45 @@ This file is the execution index for the creative AI platform. Work proceeds in 
 
 ## Delivery sequence
 
-- [~] **T01 — Architecture, foundation, and asset system**  
-  Define the production architecture, product boundaries, role model, storage rules, provider contract, repository foundation, and original asset kit before feature work.  
-  Workbook: [`task-workbooks/01-architecture-foundation-assets.md`](task-workbooks/01-architecture-foundation-assets.md)
+- [x] **T01 — Architecture, foundation, and asset system**
+      Define the production architecture, product boundaries, role model, storage rules, provider contract, repository foundation, and original asset kit before feature work.  
+      Workbook: [`task-workbooks/01-architecture-foundation-assets.md`](task-workbooks/01-architecture-foundation-assets.md)
 
-- [ ] **T02 — Design system and responsive application shell**  
+- [~] **T02 — Design system and responsive application shell**
   Establish visual tokens, typography, navigation, layout primitives, accessibility foundations, and global feedback components.  
   Workbook: [`task-workbooks/02-design-system-app-shell.md`](task-workbooks/02-design-system-app-shell.md)
 
 - [ ] **T03 — Authentication, authorization, and superadmin**  
-  Add Supabase Auth, visitor/tester/superadmin roles, protected routes, session handling, and administrative controls.  
-  Workbook: [`task-workbooks/03-auth-superadmin.md`](task-workbooks/03-auth-superadmin.md)
+      Add Supabase Auth, visitor/tester/superadmin roles, protected routes, session handling, and administrative controls.  
+      Workbook: [`task-workbooks/03-auth-superadmin.md`](task-workbooks/03-auth-superadmin.md)
 
 - [ ] **T04 — Database, storage, and secure provider connections**  
-  Implement the Postgres schema, row-level security, public/private Storage buckets, encrypted BYOK credentials, and provider capability registry.  
-  Workbook: [`task-workbooks/04-data-storage-provider-keys.md`](task-workbooks/04-data-storage-provider-keys.md)
+      Implement the Postgres schema, row-level security, public/private Storage buckets, encrypted BYOK credentials, and provider capability registry.  
+      Workbook: [`task-workbooks/04-data-storage-provider-keys.md`](task-workbooks/04-data-storage-provider-keys.md)
 
 - [ ] **T05 — Explore and discovery experience**  
-  Build the cinematic, searchable, filterable media gallery with strong loading, empty, error, hover, and mobile states.  
-  Workbook: [`task-workbooks/05-explore-discovery.md`](task-workbooks/05-explore-discovery.md)
+      Build the cinematic, searchable, filterable media gallery with strong loading, empty, error, hover, and mobile states.  
+      Workbook: [`task-workbooks/05-explore-discovery.md`](task-workbooks/05-explore-discovery.md)
 
 - [ ] **T06 — Creation detail and recreate journey**  
-  Build shareable creation details and carry an inspected creation’s prompt, model, preset, ratio, and mode into the studio.  
-  Workbook: [`task-workbooks/06-creation-detail-recreate.md`](task-workbooks/06-creation-detail-recreate.md)
+      Build shareable creation details and carry an inspected creation’s prompt, model, preset, ratio, and mode into the studio.  
+      Workbook: [`task-workbooks/06-creation-detail-recreate.md`](task-workbooks/06-creation-detail-recreate.md)
 
 - [ ] **T07 — Generation studio and reference inputs**  
-  Build Image and Video studio modes, model/preset controls, reference upload, validation, responsive layouts, and submit confirmation.  
-  Workbook: [`task-workbooks/07-generation-studio.md`](task-workbooks/07-generation-studio.md)
+      Build Image and Video studio modes, model/preset controls, reference upload, validation, responsive layouts, and submit confirmation.  
+      Workbook: [`task-workbooks/07-generation-studio.md`](task-workbooks/07-generation-studio.md)
 
 - [ ] **T08 — Guided and live generation orchestration**  
-  Implement one job contract for guided outputs and real provider adapters, including asynchronous status, webhooks/polling, failure, cancellation, and retry.  
-  Workbook: [`task-workbooks/08-generation-orchestration.md`](task-workbooks/08-generation-orchestration.md)
+      Implement one job contract for guided outputs and real provider adapters, including asynchronous status, webhooks/polling, failure, cancellation, and retry.  
+      Workbook: [`task-workbooks/08-generation-orchestration.md`](task-workbooks/08-generation-orchestration.md)
 
 - [ ] **T09 — Results, history, and asset library**  
-  Build result actions, provenance, private/public visibility, persistent history, favorites, filters, signed media access, and empty states.  
-  Workbook: [`task-workbooks/09-results-history-library.md`](task-workbooks/09-results-history-library.md)
+      Build result actions, provenance, private/public visibility, persistent history, favorites, filters, signed media access, and empty states.  
+      Workbook: [`task-workbooks/09-results-history-library.md`](task-workbooks/09-results-history-library.md)
 
 - [ ] **T10 — Quality, security, deployment, and launch**  
-  Complete responsive and accessibility QA, security review, automated tests, performance work, documentation, Vercel/Supabase deployment, and public smoke tests.  
-  Workbook: [`task-workbooks/10-quality-deployment-launch.md`](task-workbooks/10-quality-deployment-launch.md)
+      Complete responsive and accessibility QA, security review, automated tests, performance work, documentation, Vercel/Supabase deployment, and public smoke tests.  
+      Workbook: [`task-workbooks/10-quality-deployment-launch.md`](task-workbooks/10-quality-deployment-launch.md)
 
 ## Cross-cutting release criteria
 
@@ -70,4 +70,3 @@ This file is the execution index for the creative AI platform. Work proceeds in 
 - The complete journey passes at 1440px, 1024px, and 390px with keyboard-only navigation.
 - The production build, lint, type check, unit tests, and end-to-end smoke suite pass.
 - The production URL works in a signed-out private browser session.
-

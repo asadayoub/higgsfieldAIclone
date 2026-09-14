@@ -1,0 +1,32 @@
+{
+  "version": 1,
+  "artDirection": "Editorial abstraction with tactile grain, restrained blacks, cobalt and amber image tones; electric lime is reserved for moments of focus.",
+  "assets": [
+    { "id": "launch-cover", "path": "/brand/lumaforge-cover.png", "source": "OpenAI built-in image generation", "dimensions": [1536, 1024], "ratio": "3:2", "kind": "brand", "placement": ["foundation hero", "open graph"], "promptSummary": "Original cinematic triptych of cobalt glass sculpture, windswept fashion, and desert architecture." },
+    { "id": "portrait-fabric-orbit", "path": "/media/showcase/portrait-01-fabric-orbit.svg", "source": "code-native original", "dimensions": [900, 1200], "ratio": "3:4", "kind": "showcase", "category": "fashion" },
+    { "id": "portrait-ember-veil", "path": "/media/showcase/portrait-02-ember-veil.svg", "source": "code-native original", "dimensions": [900, 1200], "ratio": "3:4", "kind": "showcase", "category": "fashion" },
+    { "id": "portrait-moonlit-form", "path": "/media/showcase/portrait-03-moonlit-form.svg", "source": "code-native original", "dimensions": [900, 1200], "ratio": "3:4", "kind": "showcase", "category": "cinematic" },
+    { "id": "portrait-lime-signal", "path": "/media/showcase/portrait-04-lime-signal.svg", "source": "code-native original", "dimensions": [900, 1200], "ratio": "3:4", "kind": "showcase", "category": "graphic" },
+    { "id": "landscape-monolith-tide", "path": "/media/showcase/landscape-01-monolith-tide.svg", "source": "code-native original", "dimensions": [1400, 900], "ratio": "14:9", "kind": "showcase", "category": "architecture" },
+    { "id": "landscape-glass-horizon", "path": "/media/showcase/landscape-02-glass-horizon.svg", "source": "code-native original", "dimensions": [1400, 900], "ratio": "14:9", "kind": "showcase", "category": "surreal" },
+    { "id": "landscape-amber-transit", "path": "/media/showcase/landscape-03-amber-transit.svg", "source": "code-native original", "dimensions": [1400, 900], "ratio": "14:9", "kind": "showcase", "category": "cinematic" },
+    { "id": "landscape-silent-coast", "path": "/media/showcase/landscape-04-silent-coast.svg", "source": "code-native original", "dimensions": [1400, 900], "ratio": "14:9", "kind": "showcase", "category": "lifestyle" },
+    { "id": "square-cobalt-vessel", "path": "/media/showcase/square-01-cobalt-vessel.svg", "source": "code-native original", "dimensions": [1000, 1000], "ratio": "1:1", "kind": "showcase", "category": "product" },
+    { "id": "square-orbit-chair", "path": "/media/showcase/square-02-orbit-chair.svg", "source": "code-native original", "dimensions": [1000, 1000], "ratio": "1:1", "kind": "showcase", "category": "product" },
+    { "id": "square-liquid-type", "path": "/media/showcase/square-03-liquid-type.svg", "source": "code-native original", "dimensions": [1000, 1000], "ratio": "1:1", "kind": "showcase", "category": "graphic" },
+    { "id": "square-mineral-bloom", "path": "/media/showcase/square-04-mineral-bloom.svg", "source": "code-native original", "dimensions": [1000, 1000], "ratio": "1:1", "kind": "showcase", "category": "surreal" },
+    { "id": "preset-editorial", "path": "/media/presets/preset-editorial.svg", "source": "code-native original", "dimensions": [600, 600], "ratio": "1:1", "kind": "preset" },
+    { "id": "preset-product", "path": "/media/presets/preset-product.svg", "source": "code-native original", "dimensions": [600, 600], "ratio": "1:1", "kind": "preset" },
+    { "id": "preset-architecture", "path": "/media/presets/preset-architecture.svg", "source": "code-native original", "dimensions": [600, 600], "ratio": "1:1", "kind": "preset" },
+    { "id": "preset-surreal", "path": "/media/presets/preset-surreal.svg", "source": "code-native original", "dimensions": [600, 600], "ratio": "1:1", "kind": "preset" },
+    { "id": "preset-noir", "path": "/media/presets/preset-noir.svg", "source": "code-native original", "dimensions": [600, 600], "ratio": "1:1", "kind": "preset" },
+    { "id": "preset-vivid", "path": "/media/presets/preset-vivid.svg", "source": "code-native original", "dimensions": [600, 600], "ratio": "1:1", "kind": "preset" },
+    { "id": "video-drift", "path": "/media/system/video-poster-drift.svg", "source": "code-native original", "dimensions": [1400, 788], "ratio": "16:9", "kind": "video-poster" },
+    { "id": "video-pulse", "path": "/media/system/video-poster-pulse.svg", "source": "code-native original", "dimensions": [1400, 788], "ratio": "16:9", "kind": "video-poster" },
+    { "id": "video-veil", "path": "/media/system/video-poster-veil.svg", "source": "code-native original", "dimensions": [1400, 788], "ratio": "16:9", "kind": "video-poster" },
+    { "id": "empty-library", "path": "/media/system/empty-library.svg", "source": "code-native original", "dimensions": [800, 560], "ratio": "10:7", "kind": "system" },
+    { "id": "processing-texture", "path": "/media/system/processing-texture.svg", "source": "code-native original", "dimensions": [1200, 800], "ratio": "3:2", "kind": "system" },
+    { "id": "guided-result", "path": "/media/system/guided-result.svg", "source": "code-native original", "dimensions": [1200, 1500], "ratio": "4:5", "kind": "system" },
+    { "id": "failed-media", "path": "/media/system/failed-media.svg", "source": "code-native original", "dimensions": [1200, 800], "ratio": "3:2", "kind": "system" }
+  ]
+}

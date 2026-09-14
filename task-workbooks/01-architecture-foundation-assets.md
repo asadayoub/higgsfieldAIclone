@@ -1,6 +1,6 @@
 # T01 — Architecture, Foundation, and Asset System
 
-Status: **Planned — ready for implementation**
+Status: **Complete — implemented and verified**
 
 ## Objective
 
@@ -180,3 +180,25 @@ Browser checks:
 ## Rollback
 
 The task is foundation-only and should remain one reversible checkpoint. Schema changes are additive. If remote services are unavailable, the app falls back to guided mode while retaining the same internal interfaces.
+
+## Implementation record
+
+Completed on 2026-09-14.
+
+- Established the LumaForge product identity and an accessible foundation page.
+- Added Next.js 16, React 19, strict TypeScript, Tailwind CSS, ESLint, Prettier, Vitest, Drizzle, Supabase SSR, Motion, Lucide, and Zod.
+- Added a guided provider adapter, shared generation lifecycle, provider registry, encrypted credential helpers, and redacted structured logging.
+- Added the initial additive Postgres migration with row-level security and public/private Supabase Storage policies.
+- Added browser, authenticated server, and service-role Supabase boundaries. The public app remains operational when optional cloud configuration is absent.
+- Created the original asset system: one generated launch cover, 12 code-native showcase images, six preset thumbnails, three video poster frames, four system states, and a provenance manifest.
+- The built-in image generator reached its usage limit after the launch cover. The remaining foundation artwork was completed as original code-native vector work; no stock or reference-product media is shipped.
+
+Verification passed:
+
+```text
+npm run format:check
+npm run lint
+npm run typecheck
+npm test          # 4 files, 9 tests
+npm run build     # 6 static routes generated
+```
