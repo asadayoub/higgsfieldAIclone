@@ -40,7 +40,7 @@ This file is the execution index for the creative AI platform. Work proceeds in 
       Implement the Postgres schema, row-level security, public/private Storage buckets, encrypted BYOK credentials, and provider capability registry.  
       Workbook: [`task-workbooks/04-data-storage-provider-keys.md`](task-workbooks/04-data-storage-provider-keys.md)
 
-- [ ] **T05 — Explore and discovery experience**  
+- [x] **T05 — Explore and discovery experience**  
       Build the cinematic, searchable, filterable media gallery with strong loading, empty, error, hover, and mobile states.  
       Workbook: [`task-workbooks/05-explore-discovery.md`](task-workbooks/05-explore-discovery.md)
 
