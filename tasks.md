@@ -24,13 +24,13 @@ This file is the execution index for the creative AI platform. Work proceeds in 
       Define the production architecture, product boundaries, role model, storage rules, provider contract, repository foundation, and original asset kit before feature work.  
       Workbook: [`task-workbooks/01-architecture-foundation-assets.md`](task-workbooks/01-architecture-foundation-assets.md)
 
-- [~] **T02 — Design system and responsive application shell**
-  Establish visual tokens, typography, navigation, layout primitives, accessibility foundations, and global feedback components.  
-  Workbook: [`task-workbooks/02-design-system-app-shell.md`](task-workbooks/02-design-system-app-shell.md)
+- [x] **T02 — Design system and responsive application shell**
+      Establish visual tokens, typography, navigation, layout primitives, accessibility foundations, and global feedback components.  
+      Workbook: [`task-workbooks/02-design-system-app-shell.md`](task-workbooks/02-design-system-app-shell.md)
 
-- [ ] **T03 — Authentication, authorization, and superadmin**  
-      Add Supabase Auth, visitor/tester/superadmin roles, protected routes, session handling, and administrative controls.  
-      Workbook: [`task-workbooks/03-auth-superadmin.md`](task-workbooks/03-auth-superadmin.md)
+- [~] **T03 — Authentication, authorization, and superadmin**
+  Add Supabase Auth, visitor/tester/superadmin roles, protected routes, session handling, and administrative controls.  
+  Workbook: [`task-workbooks/03-auth-superadmin.md`](task-workbooks/03-auth-superadmin.md)
 
 - [ ] **T04 — Database, storage, and secure provider connections**  
       Implement the Postgres schema, row-level security, public/private Storage buckets, encrypted BYOK credentials, and provider capability registry.  

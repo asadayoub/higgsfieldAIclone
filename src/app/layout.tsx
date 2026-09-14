@@ -1,4 +1,6 @@
 import type { Metadata, Viewport } from "next";
+import { AppShell } from "@/components/shell/app-shell";
+import { ToastProvider } from "@/components/ui/toast";
 import "./globals.css";
 
 const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
@@ -33,7 +35,11 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        <ToastProvider>
+          <AppShell>{children}</AppShell>
+        </ToastProvider>
+      </body>
     </html>
   );
 }

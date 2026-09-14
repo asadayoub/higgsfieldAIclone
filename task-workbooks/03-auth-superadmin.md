@@ -1,6 +1,6 @@
 # T03 — Authentication, Authorization, and Superadmin
 
-Status: **Draft plan — refine before implementation**
+Status: **Planned — ready for implementation**
 
 ## Objective
 
@@ -36,3 +36,42 @@ Introduce secure user sessions and role-aware product surfaces while keeping the
 ## Risks
 
 - Bootstrapping the first superadmin must not become a public registration path. Use an explicit allowlisted email or one-time SQL promotion documented for the owner.
+
+## Final implementation plan
+
+### Session model
+
+- Add a Next.js proxy dedicated to refreshing Supabase sessions; page access never trusts cookie presence alone.
+- Centralize `requireUser`, `requireRole`, and safe return-path validation in server-only modules.
+- Keep Explore and guided Studio public. Protect Assets persistence, provider settings, account history, and all administration routes.
+
+### User flows
+
+- Use Supabase email magic links for the first release to avoid password storage and reduce signup friction.
+- Provide explicit signed-out, link-sent, expired-link, signed-in, and sign-out states with safe redirects back to the requested internal route.
+- Create the matching `profiles` record with default `tester` role after first successful authentication.
+
+### Superadmin surface
+
+- Add `/admin` with summary cards for tester count, enabled providers, recent sanitized job states, and system configuration health.
+- Add server-authorized role management and provider feature flags; administrative mutations write immutable audit records.
+- Bootstrap the first superadmin only through a server environment allowlist or direct SQL promotion—never through a public control.
+
+### Data additions
+
+```text
+admin_audit_events
+provider_feature_flags
+```
+
+All migrations remain additive with RLS enabled before access.
+
+### Verification additions
+
+- Unit tests for return-path validation and role guards.
+- Direct server tests for visitor, tester, and superadmin denial/allow paths.
+- Browser checks for signed-out redirects, magic-link request state, forbidden admin access, and session expiry.
+
+## Rollback
+
+Auth remains an enhancement around the public guided experience. If Supabase is not configured, public routes continue working while protected routes return a clear setup state rather than failing the application.

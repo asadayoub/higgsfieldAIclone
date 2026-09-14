@@ -1,6 +1,6 @@
 # T02 — Design System and Responsive Application Shell
 
-Status: **Planned — ready for implementation**
+Status: **Complete — implemented and verified**
 
 ## Objective
 
@@ -78,3 +78,23 @@ src/app/not-found.tsx
 ## Rollback
 
 Keep primitives composable and avoid coupling shell state to feature state, allowing later screens to be removed independently.
+
+## Implementation record
+
+Completed on 2026-09-14.
+
+- Added semantic dark-theme tokens, high-contrast focus treatment, reduced-motion behavior, and reusable Button, Dialog, Tooltip, Toast, and Skeleton primitives.
+- Added the persistent desktop header, responsive mobile controls, accessible navigation drawer, skip link, and keyboard search command.
+- Added stable loading, error, and not-found routes plus real typed destinations for Studio, Effects, Assets, and Account.
+- Browser QA confirmed no horizontal overflow at 390px and 1024px, complete desktop hierarchy at the default 1650px viewport, Escape dismissal, and direct input focus after Ctrl/Command+K.
+- Browser QA caught and resolved a conflicting responsive display utility before completion.
+
+Verification passed:
+
+```text
+npm run format:check
+npm run lint
+npm run typecheck
+npm test          # 4 files, 9 tests
+npm run build     # 10 static routes generated
+```
