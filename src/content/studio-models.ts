@@ -10,6 +10,12 @@ export type StudioModel = {
   durations: readonly number[];
   maxQuantity: number;
   maxReferences: number;
+  liveCapabilities?: Partial<
+    Pick<
+      StudioModel,
+      "ratios" | "qualities" | "resolutions" | "maxQuantity" | "maxReferences"
+    >
+  >;
 };
 
 const imageDefaults = {
@@ -45,6 +51,13 @@ export const studioModels: readonly StudioModel[] = [
     name: "Flux 2 Pro",
     description: "Sharp composition and editorial detail",
     provider: "replicate",
+    resolutions: ["1K", "2K", "1 MP", "2 MP"],
+    liveCapabilities: {
+      maxQuantity: 1,
+      qualities: ["Standard"],
+      resolutions: ["1 MP", "2 MP"],
+      ratios: ["1:1", "3:4", "4:3", "16:9", "9:16"],
+    },
   },
   {
     ...imageDefaults,
@@ -61,8 +74,20 @@ export const studioModels: readonly StudioModel[] = [
     provider: "openai",
     maxQuantity: 1,
     maxReferences: 0,
-    ratios: ["1:1", "3:4", "4:3"],
+    ratios: ["1:1", "3:4", "4:3", "2:3", "3:2"],
+    liveCapabilities: { ratios: ["1:1", "2:3", "3:2"] },
     resolutions: ["1K"],
+  },
+  {
+    ...videoDefaults,
+    id: "hailuo",
+    name: "Hailuo video-01",
+    description: "Six-second video via Replicate and MiniMax",
+    provider: "replicate",
+    ratios: ["16:9"],
+    qualities: ["Standard"],
+    resolutions: ["720p"],
+    durations: [6],
   },
   {
     ...videoDefaults,
@@ -102,6 +127,12 @@ export const studioPresets = [
   "Soft Ascent",
 ] as const;
 
-export function getStudioModel(id: string) {
-  return studioModels.find((model) => model.id === id);
+export function getStudioModel(
+  id: string,
+  execution: "guided" | "live" = "guided",
+) {
+  const model = studioModels.find((model) => model.id === id);
+  return model && execution === "live"
+    ? { ...model, ...model.liveCapabilities }
+    : model;
 }

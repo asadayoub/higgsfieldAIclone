@@ -2,7 +2,9 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useRef } from "react";
+import { useRouter } from "next/navigation";
+import { resultHref, type RunResponse } from "@/lib/generation/contracts";
 import {
   ImageIcon,
   Video,
@@ -61,6 +63,21 @@ function initialConfiguration(parsed: ParsedStudioRecipe): StudioConfiguration {
         ? recipe.ratio
         : model.ratios[0]!,
     referenceCount: 0,
+    ...(recipe?.quality && model.qualities.includes(recipe.quality)
+      ? { quality: recipe.quality }
+      : {}),
+    ...(recipe?.resolution && model.resolutions.includes(recipe.resolution)
+      ? { resolution: recipe.resolution }
+      : {}),
+    ...(recipe?.quantity &&
+    Number.isInteger(recipe.quantity) &&
+    recipe.quantity <= model.maxQuantity &&
+    recipe.quantity > 0
+      ? { quantity: recipe.quantity }
+      : {}),
+    ...(recipe?.duration && model.durations.includes(recipe.duration)
+      ? { duration: recipe.duration }
+      : {}),
   };
 }
 
@@ -95,10 +112,12 @@ export function GenerationStudio({
   parsed,
   signedIn,
   connectedProviders,
+  enabledLiveModels,
 }: {
   parsed: ParsedStudioRecipe;
   signedIn: boolean;
   connectedProviders: string[];
+  enabledLiveModels: string[];
 }) {
   const [configuration, setConfiguration] = useState(() =>
     initialConfiguration(parsed),
@@ -107,16 +126,22 @@ export function GenerationStudio({
   const [modelSearch, setModelSearch] = useState("");
   const [errors, setErrors] = useState<string[]>([]);
   const [reviewOpen, setReviewOpen] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [liveId, setLiveId] = useState<string | null>(null);
+  const submissionLock = useRef(false);
+  const router = useRouter();
   const { notify } = useToast();
-  const model = getStudioModel(configuration.modelId)!;
+  const model = getStudioModel(configuration.modelId, configuration.execution)!;
   const source = parsed.recipe?.source
     ? findCreation(parsed.recipe.source)
     : undefined;
-  const availableModels = studioModels.filter(
-    (item) =>
-      item.media === configuration.media &&
-      (configuration.execution === "guided" || item.provider),
-  );
+  const availableModels = studioModels
+    .map((item) => getStudioModel(item.id, configuration.execution)!)
+    .filter(
+      (item) =>
+        item.media === configuration.media &&
+        (configuration.execution === "guided" || item.provider),
+    );
   const matchingModels = availableModels.filter((item) =>
     `${item.name} ${item.description}`
       .toLowerCase()
@@ -157,7 +182,7 @@ export function GenerationStudio({
       }
       setConfiguration((current) => ({
         ...current,
-        ...defaults(next),
+        ...defaults(getStudioModel(next.id, "live")!),
         execution,
       }));
     } else update("execution", execution);
@@ -165,6 +190,22 @@ export function GenerationStudio({
   function review() {
     const input = { ...configuration, referenceCount: references.length };
     const issues = validateStudioConfiguration(input);
+    if (
+      input.execution === "live" &&
+      input.modelId === "hailuo" &&
+      references.some(
+        (reference) =>
+          Math.abs(reference.width / reference.height - 16 / 9) > 0.02,
+      )
+    )
+      issues.push("Use a 16:9 reference for this Hailuo workflow.");
+    if (
+      input.execution === "live" &&
+      !enabledLiveModels.includes(input.modelId)
+    )
+      issues.push(
+        "This live workflow is disabled. A superadmin can enable the provider and media type.",
+      );
     if (
       input.execution === "live" &&
       (!signedIn ||
@@ -209,6 +250,47 @@ export function GenerationStudio({
       notify("Recipe draft saved on this device");
     } catch {
       notify("Draft storage is unavailable on this device");
+    }
+  }
+
+  async function runLive() {
+    if (submissionLock.current) return;
+    submissionLock.current = true;
+    setSubmitting(true);
+    setReviewOpen(false);
+    const id = crypto.randomUUID();
+    setLiveId(id);
+    setErrors([]);
+    try {
+      const response = await fetch("/api/generations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id,
+          configuration: {
+            ...configuration,
+            referenceCount: references.length,
+          },
+          referencePaths: references.flatMap((reference) =>
+            reference.path ? [reference.path] : [],
+          ),
+          confirmedCost: true,
+        }),
+      });
+      const result = (await response.json()) as RunResponse;
+      if (result.run) router.push(resultHref(result.run.id));
+      else
+        setErrors([
+          result.error ??
+            "Submission could not be confirmed. Open this run or check your provider dashboard before starting another.",
+        ]);
+    } catch {
+      setErrors([
+        "Connection interrupted. Open this run or check your provider dashboard before starting another; charges may apply.",
+      ]);
+    } finally {
+      setSubmitting(false);
+      submissionLock.current = false;
     }
   }
 
@@ -384,6 +466,7 @@ export function GenerationStudio({
       <button
         type="button"
         onClick={review}
+        disabled={submitting}
         className="mt-5 flex min-h-12 w-full cursor-pointer items-center justify-center gap-2 rounded-full bg-[var(--action)] px-5 text-sm font-semibold text-[var(--action-ink)] hover:bg-[var(--action-hover)]"
       >
         <WandSparkles className="size-4" aria-hidden="true" />
@@ -495,6 +578,19 @@ export function GenerationStudio({
         {composer}
       </div>
       <GuidedRunner />
+      {liveId && (
+        <p
+          role="status"
+          className="mt-5 text-sm leading-7 text-[var(--text-muted)]"
+        >
+          {submitting
+            ? "Submitting your confirmed live run. Image generation may take several minutes."
+            : "Latest live submission:"}{" "}
+          <Link href={resultHref(liveId)} className="underline">
+            Open persisted run →
+          </Link>
+        </p>
+      )}
       <Dialog
         open={reviewOpen}
         onClose={() => setReviewOpen(false)}
@@ -544,7 +640,7 @@ export function GenerationStudio({
           <p className="mt-3 text-xs leading-5 text-[var(--text-faint)]">
             {configuration.execution === "guided"
               ? "Prompt and preset select an authored study. References and output settings do not change its pixels. Video results are motion posters, not generated clips. This run is saved only on this browser."
-              : "The live execution runner is not connected yet. Saving a draft does not start generation."}
+              : "Confirming submits one paid generation using your connected key. Preset direction is appended to the prompt. References are shared only with the named provider; Replicate video also uses MiniMax. A synchronous OpenAI request may take up to four minutes; an interrupted submission is never automatically retried."}
           </p>
           {configuration.execution === "guided" && (
             <button
@@ -553,6 +649,16 @@ export function GenerationStudio({
               className="mt-6 min-h-11 w-full cursor-pointer rounded-full bg-[var(--action)] text-sm font-semibold text-[var(--action-ink)]"
             >
               Run free guided study
+            </button>
+          )}
+          {configuration.execution === "live" && (
+            <button
+              type="button"
+              disabled={submitting}
+              onClick={runLive}
+              className="mt-6 min-h-11 w-full rounded-full bg-[var(--action)] text-sm font-semibold text-[var(--action-ink)] disabled:opacity-50"
+            >
+              Confirm paid live generation
             </button>
           )}
           <button

@@ -52,12 +52,12 @@ This file is the execution index for the creative AI platform. Work proceeds in 
   Build Image and Video studio modes, model/preset controls, reference upload, validation, responsive layouts, and submit confirmation.  
   Workbook: [`task-workbooks/07-generation-studio.md`](task-workbooks/07-generation-studio.md)
 
-- [~] **T08 — Guided and live generation orchestration**
-  Implement one job contract for guided outputs and real provider adapters, including asynchronous status, webhooks/polling, failure, cancellation, and retry.  
-  Workbook: [`task-workbooks/08-generation-orchestration.md`](task-workbooks/08-generation-orchestration.md)
+- [x] **T08 — Guided and live generation orchestration**
+      Implement one job contract for guided outputs and real provider adapters, including asynchronous status, webhooks/polling, failure, cancellation, and retry.  
+      Workbook: [`task-workbooks/08-generation-orchestration.md`](task-workbooks/08-generation-orchestration.md)
 
-- [ ] **T09 — Results, history, and asset library**  
-      Build result actions, provenance, private/public visibility, persistent history, favorites, filters, signed media access, and empty states.  
+- [x] **T09 — Results, history, and asset library**
+      Build result actions, provenance, private/public visibility, persistent history, favorites, filters, signed media access, and empty states.
       Workbook: [`task-workbooks/09-results-history-library.md`](task-workbooks/09-results-history-library.md)
 
 - [ ] **T10 — Quality, security, deployment, and launch**  

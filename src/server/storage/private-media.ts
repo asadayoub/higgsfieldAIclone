@@ -28,6 +28,8 @@ export async function createPrivateUploadToken(
 ) {
   const { user } = await requireUser();
   const bucket = privateBucketSchema.parse(bucketInput);
+  if (bucket !== "reference-private")
+    throw new Error("Generated outputs are server-owned");
   if (!isOwnedPrivatePath(user.id, path)) throw new Error("Invalid media path");
   const { data, error } = await createSupabaseAdminClient()
     .storage.from(bucket)

@@ -1,4 +1,5 @@
 import type { Route } from "next";
+import { studioModels } from "@/content/studio-models";
 import {
   creations,
   type Creation,
@@ -7,8 +8,8 @@ import {
 
 export const studioRecipeVersion = "1";
 
-const supportedRatios = new Set(["1:1", "3:4", "4:3", "14:9", "16:9", "9:16"]);
-const supportedModels = new Set(creations.map(({ model }) => model));
+const supportedRatios = new Set(studioModels.flatMap((model) => model.ratios));
+const supportedModels = new Set(studioModels.map(({ name }) => name));
 const retiredModelAliases: Record<string, string> = {
   "Luma Image Beta": "Luma Image v1",
   "Flux Pro 1.1": "Flux 2 Pro",
@@ -23,6 +24,10 @@ export type StudioRecipe = {
   model: string;
   preset: string;
   ratio: string;
+  quality?: string;
+  resolution?: string;
+  quantity?: number;
+  duration?: number;
 };
 
 export type ParsedStudioRecipe = {
@@ -118,6 +123,18 @@ export function parseStudioRecipe(
       model: mappedModel,
       preset,
       ratio,
+      ...(first(values.quality)
+        ? { quality: first(values.quality)!.slice(0, 20) }
+        : {}),
+      ...(first(values.resolution)
+        ? { resolution: first(values.resolution)!.slice(0, 20) }
+        : {}),
+      ...(first(values.quantity)
+        ? { quantity: Number(first(values.quantity)) }
+        : {}),
+      ...(first(values.duration)
+        ? { duration: Number(first(values.duration)) }
+        : {}),
     },
     notices:
       mappedModel !== rawModel

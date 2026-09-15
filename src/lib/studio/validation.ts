@@ -23,7 +23,7 @@ export type StudioConfiguration = {
 
 export function validateStudioConfiguration(input: StudioConfiguration) {
   const errors: string[] = [];
-  const model = getStudioModel(input.modelId);
+  const model = getStudioModel(input.modelId, input.execution);
   if (!model || model.media !== input.media)
     return ["Choose a compatible model."];
   if (!input.prompt.trim() || input.prompt.length > 1200)
@@ -44,6 +44,8 @@ export function validateStudioConfiguration(input: StudioConfiguration) {
     errors.push("Choose a supported output quantity.");
   if (input.media === "video" && !model.durations.includes(input.duration))
     errors.push("Choose a supported duration.");
+  if (input.media === "image" && input.duration !== 0)
+    errors.push("Image workflows do not accept a video duration.");
   if (
     !Number.isInteger(input.referenceCount) ||
     input.referenceCount < 0 ||

@@ -34,3 +34,34 @@ export async function updateUserRole(formData: FormData) {
   });
   revalidatePath("/admin");
 }
+
+export async function updateProviderAvailability(formData: FormData) {
+  const actor = await requireRole("superadmin", "/admin");
+  const provider = z
+    .enum(["openai", "replicate"])
+    .parse(formData.get("provider"));
+  const imageEnabled = formData.get("imageEnabled") === "on";
+  const videoEnabled =
+    provider === "replicate" && formData.get("videoEnabled") === "on";
+  const supabase = await createSupabaseServerClient();
+  if (!supabase) throw new Error("Provider settings unavailable");
+  const { error } = await supabase
+    .from("provider_feature_flags")
+    .update({
+      image_enabled: imageEnabled,
+      video_enabled: videoEnabled,
+      updated_by: actor.user.id,
+    })
+    .eq("provider", provider);
+  if (error) throw new Error("Provider availability update failed");
+  await supabase.from("admin_audit_events").insert({
+    actor_id: actor.user.id,
+    action: "provider.availability_changed",
+    target_type: "provider",
+    target_id: provider,
+    metadata: { imageEnabled, videoEnabled },
+  });
+  revalidatePath("/admin");
+  revalidatePath("/studio");
+  revalidatePath("/settings/providers");
+}

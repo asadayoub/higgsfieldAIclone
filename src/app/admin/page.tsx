@@ -1,5 +1,5 @@
 import { Activity, ShieldCheck, UsersRound, WandSparkles } from "lucide-react";
-import { updateUserRole } from "./actions";
+import { updateUserRole, updateProviderAvailability } from "./actions";
 import { Button } from "@/components/ui/button";
 import { requireRole } from "@/server/auth/session";
 import { createSupabaseServerClient } from "@/server/supabase/client";
@@ -7,7 +7,12 @@ import { createSupabaseServerClient } from "@/server/supabase/client";
 export default async function AdminPage() {
   await requireRole("superadmin", "/admin");
   const supabase = await createSupabaseServerClient();
-  const [{ data: profiles }, { data: flags }, { count: jobCount }] = supabase
+  const [
+    { data: profiles },
+    { data: flags },
+    { count: jobCount },
+    { data: events },
+  ] = supabase
     ? await Promise.all([
         supabase
           .from("profiles")
@@ -21,8 +26,13 @@ export default async function AdminPage() {
         supabase
           .from("generation_jobs")
           .select("id", { count: "exact", head: true }),
+        supabase
+          .from("generation_events")
+          .select("generation_id,status,error_code,created_at")
+          .order("created_at", { ascending: false })
+          .limit(20),
       ])
-    : [{ data: [] }, { data: [] }, { count: 0 }];
+    : [{ data: [] }, { data: [] }, { count: 0 }, { data: [] }];
   const testers =
     profiles?.filter((profile) => profile.role === "tester").length ?? 0;
   const enabled =
@@ -64,6 +74,51 @@ export default async function AdminPage() {
           </article>
         ))}
       </div>
+      <section className="mt-8 rounded-3xl border border-[var(--line)] bg-[var(--panel)] p-5">
+        <h2 className="font-semibold">Live provider availability</h2>
+        <p className="mt-2 text-xs leading-6 text-[var(--text-muted)]">
+          Enabling permits confirmed paid runs using each creator’s own key. It
+          does not submit a generation. Existing jobs can still be retrieved
+          when new submissions are disabled.
+        </p>
+        <div className="mt-5 grid gap-4 sm:grid-cols-2">
+          {flags
+            ?.filter((flag) => flag.provider !== "guided")
+            .map((flag) => (
+              <form
+                key={flag.provider}
+                action={updateProviderAvailability}
+                className="rounded-2xl border border-white/10 p-4"
+              >
+                <input type="hidden" name="provider" value={flag.provider} />
+                <h3 className="mb-4 text-sm font-semibold capitalize">
+                  {flag.provider}
+                </h3>
+                <label className="flex min-h-11 items-center gap-3 text-sm">
+                  <input
+                    type="checkbox"
+                    name="imageEnabled"
+                    defaultChecked={flag.image_enabled}
+                  />
+                  Enable live images
+                </label>
+                {flag.provider === "replicate" && (
+                  <label className="flex min-h-11 items-center gap-3 text-sm">
+                    <input
+                      type="checkbox"
+                      name="videoEnabled"
+                      defaultChecked={flag.video_enabled}
+                    />
+                    Enable live video
+                  </label>
+                )}
+                <Button type="submit" size="sm" className="mt-4">
+                  Save availability
+                </Button>
+              </form>
+            ))}
+        </div>
+      </section>
       <section className="mt-8 overflow-hidden rounded-3xl border border-[var(--line)] bg-[var(--panel)]">
         <div className="border-b border-[var(--line)] px-5 py-4">
           <h2 className="font-semibold">Workspace access</h2>
@@ -112,6 +167,45 @@ export default async function AdminPage() {
             </p>
           )}
         </div>
+      </section>
+      <section className="mt-8 rounded-3xl border border-[var(--line)] bg-[var(--panel)] p-5">
+        <h2 className="font-semibold">Generation diagnostics</h2>
+        <p className="mt-2 text-xs leading-6 text-[var(--text-muted)]">
+          The latest 20 sanitized job events. Credentials, provider responses,
+          and private media URLs are never shown.
+        </p>
+        <ol className="mt-5 divide-y divide-white/10">
+          {events?.map((event, index) => (
+            <li
+              key={`${event.generation_id}:${event.created_at}:${index}`}
+              className="flex flex-wrap gap-x-6 gap-y-2 py-4 text-xs"
+            >
+              <span className="font-mono">
+                {event.generation_id.slice(0, 8)}
+              </span>
+              <span>{event.status}</span>
+              <span className="text-[var(--text-muted)]">
+                {[
+                  "provider_rejected",
+                  "provider_failed",
+                  "submission_unknown",
+                  "output_unavailable",
+                  "timed_out",
+                ].includes(event.error_code)
+                  ? event.error_code
+                  : "—"}
+              </span>
+              <span className="text-[var(--text-muted)]">
+                {new Date(event.created_at).toLocaleString()}
+              </span>
+            </li>
+          ))}
+        </ol>
+        {!events?.length && (
+          <p className="mt-5 text-sm text-[var(--text-muted)]">
+            No generation events yet.
+          </p>
+        )}
       </section>
     </main>
   );

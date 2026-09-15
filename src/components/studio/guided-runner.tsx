@@ -3,71 +3,49 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState, useSyncExternalStore } from "react";
-import {
-  cancelGuidedJob,
-  createGuidedJob,
-  guidedJobUpdate,
-  guidedOutputs,
-  readGuidedJob,
-  type GuidedJob,
-} from "@/lib/generation/guided-job";
+import { guidedJobUpdate, guidedOutputs } from "@/lib/generation/guided-job";
 import type { StudioConfiguration } from "@/lib/studio/validation";
 import { creationDetailHref } from "@/lib/discovery/creation-recipe";
-
-const storageKey = "lumaforge:guided-job:v1";
-const changeEvent = "lumaforge:guided-job-change";
-let cachedRaw: string | null | undefined;
-let cachedJob: GuidedJob | null = null;
-
-function snapshot() {
-  let raw: string | null;
-  try {
-    raw = localStorage.getItem(storageKey);
-  } catch {
-    return cachedJob;
-  }
-  if (raw !== cachedRaw) {
-    cachedRaw = raw;
-    cachedJob = readGuidedJob(raw, Date.now());
-  }
-  return cachedJob;
-}
-function subscribe(listener: () => void) {
-  window.addEventListener("storage", listener);
-  window.addEventListener(changeEvent, listener);
-  return () => {
-    window.removeEventListener("storage", listener);
-    window.removeEventListener(changeEvent, listener);
-  };
-}
-function persist(job: GuidedJob) {
-  localStorage.setItem(storageKey, JSON.stringify(job));
-  window.dispatchEvent(new Event(changeEvent));
-}
+import { resultHref } from "@/lib/generation/contracts";
+import {
+  startLocalRun,
+  cancelLocalRun,
+  localHistorySnapshot,
+  localHistoryServerSnapshot,
+  subscribeLocalHistory,
+  migrateLatestGuidedRun,
+} from "@/lib/generation/local-history";
 
 export function startGuidedRun(configuration: StudioConfiguration) {
-  // A second click reuses the active record instead of starting another run.
-  const current = snapshot();
-  if (
-    current &&
-    ["queued", "processing"].includes(
-      guidedJobUpdate(current, Date.now()).status,
-    )
-  )
-    return current;
-  const job = createGuidedJob(crypto.randomUUID(), configuration, Date.now());
-  persist(job);
-  return job;
+  return startLocalRun(configuration);
 }
 
 export function GuidedRunner() {
-  const job = useSyncExternalStore(subscribe, snapshot, () => null);
+  const history = useSyncExternalStore(
+    subscribeLocalHistory,
+    localHistorySnapshot,
+    localHistoryServerSnapshot,
+  );
+  const job = history[0]?.job;
   const [now, setNow] = useState(0);
   const [error, setError] = useState("");
   useEffect(() => {
-    const timer = window.setInterval(() => setNow(Date.now()), 200);
+    try {
+      migrateLatestGuidedRun();
+    } catch {
+      /* Runs explain storage failures at submission. */
+    }
+    const timer = window.setInterval(() => {
+      const current = Date.now();
+      setNow(current);
+      if (
+        !job ||
+        !["queued", "processing"].includes(guidedJobUpdate(job, current).status)
+      )
+        clearInterval(timer);
+    }, 200);
     return () => window.clearInterval(timer);
-  }, []);
+  }, [job]);
   if (!job) return null;
   const update = guidedJobUpdate(job, now || job.createdAt);
   const active = update.status === "queued" || update.status === "processing";
@@ -96,7 +74,7 @@ export function GuidedRunner() {
             type="button"
             onClick={() => {
               try {
-                persist(cancelGuidedJob(job, Date.now()));
+                cancelLocalRun(job.id);
               } catch {
                 setError(
                   "Could not save cancellation. Enable browser storage and try again.",
@@ -176,6 +154,12 @@ export function GuidedRunner() {
           {error}
         </p>
       )}
+      <Link
+        href={resultHref(job.id)}
+        className="mt-5 inline-flex min-h-11 items-center rounded-full border border-white/15 px-5 text-sm"
+      >
+        Open result and actions →
+      </Link>
     </section>
   );
 }
