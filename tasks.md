@@ -48,9 +48,9 @@ This file is the execution index for the creative AI platform. Work proceeds in 
       Build shareable creation details and carry an inspected creation’s prompt, model, preset, ratio, and mode into the studio.  
       Workbook: [`task-workbooks/06-creation-detail-recreate.md`](task-workbooks/06-creation-detail-recreate.md)
 
-- [ ] **T07 — Generation studio and reference inputs**  
-      Build Image and Video studio modes, model/preset controls, reference upload, validation, responsive layouts, and submit confirmation.  
-      Workbook: [`task-workbooks/07-generation-studio.md`](task-workbooks/07-generation-studio.md)
+- [~] **T07 — Generation studio and reference inputs**  
+  Build Image and Video studio modes, model/preset controls, reference upload, validation, responsive layouts, and submit confirmation.  
+  Workbook: [`task-workbooks/07-generation-studio.md`](task-workbooks/07-generation-studio.md)
 
 - [ ] **T08 — Guided and live generation orchestration**  
       Implement one job contract for guided outputs and real provider adapters, including asynchronous status, webhooks/polling, failure, cancellation, and retry.  
