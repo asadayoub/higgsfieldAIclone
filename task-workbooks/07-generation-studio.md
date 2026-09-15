@@ -70,6 +70,9 @@ Create focused Image and Video workspaces that make model configuration powerful
 
 ## Remaining verification gate
 
+- The owner reports testing T07. Chrome now shows a valid 1200×1200 local reference preview. Private authenticated upload and cross-account denial remain separate security checks; no cloud-upload success is inferred from the local preview.
+- Follow-up: green CTA text rendered white because the unlayered anchor reset overrode Tailwind text utilities. Moving the anchor reset into the base layer restores dark action text; computed Chrome styles confirm `rgb(17, 20, 8)` on `rgb(200, 255, 61)` for links and buttons.
+
 - The browser refused attaching the original public cover image through its file chooser. No file was uploaded and no reference-picker success is claimed.
 - Recheck valid/invalid file selection, local previews, ordering/removal, private authenticated upload, and cross-account object denial once browser file access is available.
 - Complete 390px/1024px visual QA and ensure file-picker state is clean before continuing browser work.

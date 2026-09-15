@@ -29,6 +29,7 @@ import { ReferenceInput, type StudioReference } from "./reference-input";
 import { Dialog } from "@/components/ui/dialog";
 import { useToast } from "@/components/ui/toast";
 import { cn } from "@/lib/cn";
+import { GuidedRunner, startGuidedRun } from "./guided-runner";
 
 function defaults(model: StudioModel) {
   return {
@@ -178,6 +179,19 @@ export function GenerationStudio({
       issues.push("Upload each live reference privately before continuing.");
     setErrors(issues);
     if (!issues.length) setReviewOpen(true);
+  }
+
+  function runGuided() {
+    try {
+      startGuidedRun({ ...configuration, referenceCount: references.length });
+      setReviewOpen(false);
+      notify("Guided study started. Results appear below the composer.");
+    } catch {
+      setReviewOpen(false);
+      setErrors([
+        "Could not save this run. Enable browser storage and review a valid guided recipe before trying again.",
+      ]);
+    }
   }
   function saveDraft() {
     try {
@@ -480,6 +494,7 @@ export function GenerationStudio({
         </section>
         {composer}
       </div>
+      <GuidedRunner />
       <Dialog
         open={reviewOpen}
         onClose={() => setReviewOpen(false)}
@@ -527,9 +542,19 @@ export function GenerationStudio({
               : "A guided run uses authored study assets, not a live AI model. No external charges apply."}
           </p>
           <p className="mt-3 text-xs leading-5 text-[var(--text-faint)]">
-            The execution runner is not connected yet. Save this reviewed recipe
-            as a draft; saving does not start generation.
+            {configuration.execution === "guided"
+              ? "Prompt and preset select an authored study. References and output settings do not change its pixels. Video results are motion posters, not generated clips. This run is saved only on this browser."
+              : "The live execution runner is not connected yet. Saving a draft does not start generation."}
           </p>
+          {configuration.execution === "guided" && (
+            <button
+              type="button"
+              onClick={runGuided}
+              className="mt-6 min-h-11 w-full cursor-pointer rounded-full bg-[var(--action)] text-sm font-semibold text-[var(--action-ink)]"
+            >
+              Run free guided study
+            </button>
+          )}
           <button
             type="button"
             onClick={saveDraft}
