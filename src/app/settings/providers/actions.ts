@@ -21,7 +21,7 @@ export type ProviderConnectionState = {
 };
 
 const connectionSchema = z.object({
-  provider: z.enum(["openai", "replicate"]),
+  provider: z.literal("openrouter"),
   label: z.string().trim().min(2).max(80),
   secret: z.string().trim().min(8).max(4096),
 });
@@ -31,7 +31,7 @@ const deletionSchema = z.object({
 });
 
 function providerName(provider: ConnectableProviderId) {
-  return provider === "openai" ? "OpenAI" : "Replicate";
+  return provider === "openrouter" ? "OpenRouter" : "Provider";
 }
 
 export async function connectProvider(

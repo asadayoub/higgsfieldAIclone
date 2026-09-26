@@ -8,6 +8,10 @@ export type HistoryEntry = {
   createdAt: number;
   favorite: boolean;
   preview: string;
+  fundingSource?: "system_free" | "personal_key" | "legacy";
+  resolvedModel?: string;
+  actualCostUsd?: number | null;
+  provider?: string;
 };
 export type HistoryFilter = {
   query: string;

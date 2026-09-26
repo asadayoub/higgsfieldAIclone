@@ -52,18 +52,19 @@ export function HistoryLibrary({
     const timer = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(timer);
   }, []);
+  const legacyEntries: HistoryEntry[] = local.map((record) => ({
+    id: record.job.id,
+    execution: "guided" as const,
+    media: record.job.configuration.media,
+    status: guidedJobUpdate(record.job, now || record.job.createdAt).status,
+    prompt: record.job.configuration.prompt,
+    modelId: record.job.configuration.modelId,
+    createdAt: record.job.createdAt,
+    favorite: record.favorite,
+    preview: guidedOutputs(record.job)[0]?.src ?? "",
+  }));
   const entries: HistoryEntry[] = [
-    ...local.map((record) => ({
-      id: record.job.id,
-      execution: "guided" as const,
-      media: record.job.configuration.media,
-      status: guidedJobUpdate(record.job, now || record.job.createdAt).status,
-      prompt: record.job.configuration.prompt,
-      modelId: record.job.configuration.modelId,
-      createdAt: record.job.createdAt,
-      favorite: record.favorite,
-      preview: guidedOutputs(record.job)[0]?.src ?? "",
-    })),
+    ...(library ? [] : legacyEntries),
     ...cloud.map((run) => ({
       id: run.id,
       execution: "live" as const,
@@ -74,6 +75,10 @@ export function HistoryLibrary({
       createdAt: Date.parse(run.createdAt),
       favorite: run.assets.some((asset) => asset.favorite),
       preview: run.assets[0]?.media === "image" ? run.assets[0].url : "",
+      fundingSource: run.fundingSource,
+      resolvedModel: run.resolvedModel,
+      actualCostUsd: run.actualCostUsd,
+      provider: run.provider,
     })),
   ];
   const filtered = filterHistory(entries, {
@@ -95,11 +100,12 @@ export function HistoryLibrary({
         {library ? "Every finished frame." : "Every run. Every direction."}
       </h1>
       <p className="mt-4 max-w-2xl text-sm leading-7 text-[var(--text-muted)]">
-        The latest 50 guided studies stay on this browser.{" "}
+        {library
+          ? "Only private generated outputs are included in Assets. "
+          : "Legacy authored studies remain readable in this browser but are not AI outputs. "}
         {signedIn
-          ? "Your latest 100 private live runs are loaded from your account."
-          : "Sign in to view private live runs across devices."}{" "}
-        Guided studies are authored assets, not live AI outputs.
+          ? "Your latest 100 private provider runs are loaded from your account."
+          : "Sign in to view private generated runs across devices."}
       </p>
       {error && (
         <p role="alert" className="mt-4 text-sm text-[var(--danger)]">
@@ -150,6 +156,7 @@ export function HistoryLibrary({
                 "all",
                 "queued",
                 "processing",
+                "saving",
                 "complete",
                 "failed",
                 "cancelled",
@@ -196,7 +203,7 @@ export function HistoryLibrary({
                     src={entry.preview}
                     alt={
                       entry.execution === "guided"
-                        ? "Authored guided study"
+                        ? "Legacy authored study"
                         : "Private AI result"
                     }
                     fill
@@ -215,17 +222,32 @@ export function HistoryLibrary({
               <div className="p-4">
                 <p className="text-[10px] tracking-widest text-[var(--action)] uppercase">
                   {entry.execution === "guided"
-                    ? "Guided · authored"
-                    : "Live AI · private"}
+                    ? "Legacy authored study"
+                    : `${entry.provider === "huggingface" ? "Hugging Face" : "OpenRouter"} · private`}
                   {entry.favorite ? " · ★" : ""}
                 </p>
                 <h2 className="mt-2 line-clamp-2 text-sm leading-6">
                   {entry.prompt}
                 </h2>
                 <p className="mt-3 text-xs text-[var(--text-muted)]">
-                  {getStudioModel(entry.modelId)?.name ?? entry.modelId} ·{" "}
-                  {entry.status}
+                  {entry.resolvedModel ??
+                    getStudioModel(entry.modelId)?.name ??
+                    entry.modelId}{" "}
+                  · {entry.status}
                 </p>
+                {entry.execution === "live" ? (
+                  <p className="mt-2 text-[11px] text-[var(--text-muted)]">
+                    {entry.fundingSource === "system_free"
+                      ? "Free allowance"
+                      : entry.fundingSource === "personal_key"
+                        ? "Personal key"
+                        : "Legacy"}
+                    {entry.actualCostUsd !== null &&
+                    entry.actualCostUsd !== undefined
+                      ? ` · $${entry.actualCostUsd.toFixed(6)}`
+                      : " · Cost not reported"}
+                  </p>
+                ) : null}
                 <p className="mt-2 text-[11px] text-[var(--text-muted)]">
                   {new Date(entry.createdAt).toLocaleString()}
                 </p>
@@ -243,7 +265,9 @@ export function HistoryLibrary({
           <p className="mt-3 text-sm text-[var(--text-muted)]">
             {entries.length
               ? "Try another prompt, model, or filter."
-              : "Run a free guided study from the studio to start your library."}
+              : library
+                ? "Complete a real generation to add it to your private Assets."
+                : "Start a real provider generation from the studio."}
           </p>
         </section>
       )}

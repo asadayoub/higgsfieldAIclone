@@ -8,7 +8,7 @@ import {
 
 const config: StudioConfiguration = {
   media: "image",
-  execution: "guided",
+  execution: "live",
   modelId: "luma-image",
   prompt: "A quiet cinematic frame",
   preset: "None",
@@ -22,7 +22,7 @@ const config: StudioConfiguration = {
 describe("studio capabilities", () => {
   it("accepts a compatible configuration", () =>
     expect(validateStudioConfiguration(config)).toEqual([]));
-  it("rejects incompatible media, ratios, live models, and reference counts", () => {
+  it("rejects incompatible media, ratios, and reference counts", () => {
     expect(
       validateStudioConfiguration({ ...config, media: "video" }),
     ).not.toEqual([]);
@@ -33,7 +33,7 @@ describe("studio capabilities", () => {
         execution: "live",
         referenceCount: 8,
       }),
-    ).toHaveLength(3);
+    ).toHaveLength(2);
   });
   it("rejects empty prompts and unsupported quantities", () =>
     expect(

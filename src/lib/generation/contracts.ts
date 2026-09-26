@@ -6,11 +6,12 @@ import {
   type StudioConfiguration,
 } from "@/lib/studio/validation";
 import type { GenerationStatus } from "./state-machine";
+import type { FundingSource } from "@/content/studio-models";
 
 export const configurationSchema = z
   .object({
     media: z.enum(["image", "video"]),
-    execution: z.enum(["guided", "live"]),
+    execution: z.literal("live"),
     modelId: z.string().max(80),
     prompt: z.string().min(1).max(1200),
     preset: z.string().max(80),
@@ -31,11 +32,12 @@ export const submissionSchema = z
     id: z.uuid(),
     configuration: configurationSchema,
     referencePaths: z.array(z.string().max(240)).max(3),
-    confirmedCost: z.literal(true),
+    fundingSource: z.enum(["system_free", "personal_key"]),
+    confirmedAllowance: z.boolean(),
+    confirmedExternalCost: z.boolean(),
   })
   .superRefine((input, ctx) => {
     if (
-      input.configuration.execution !== "live" ||
       input.referencePaths.length !== input.configuration.referenceCount ||
       new Set(input.referencePaths).size !== input.referencePaths.length
     )
@@ -43,7 +45,23 @@ export const submissionSchema = z
         code: "custom",
         message: "Review a live recipe with its selected references.",
       });
+    if (
+      (input.fundingSource === "system_free" && !input.confirmedAllowance) ||
+      (input.fundingSource === "personal_key" && !input.confirmedExternalCost)
+    )
+      ctx.addIssue({
+        code: "custom",
+        message: "Confirm the selected funding method before running.",
+      });
   });
+
+export type FreeAllowance = {
+  limit: 3;
+  used: number;
+  remaining: number;
+  resetsAt: string;
+  available: boolean;
+};
 
 export type RunAsset = {
   id: string;
@@ -51,6 +69,10 @@ export type RunAsset = {
   media: "image" | "video";
   favorite: boolean;
   publicSlug: string | null;
+  showcaseListed: boolean;
+  publicTitle: string | null;
+  publicCategory: string | null;
+  publicAltText: string | null;
 };
 export type RunRecord = {
   id: string;
@@ -58,6 +80,10 @@ export type RunRecord = {
   status: GenerationStatus;
   configuration: StudioConfiguration;
   createdAt: string;
+  fundingSource: FundingSource | "legacy";
+  resolvedModel: string;
+  actualCostUsd: number | null;
+  allowance: FreeAllowance | null;
   error: string | null;
   assets: RunAsset[];
 };
@@ -91,10 +117,18 @@ export const runErrors: Record<string, string> = {
     "The provider rejected this request. Check model access, billing, and the selected settings.",
   provider_failed:
     "The provider could not complete this run. Review your prompt and provider account before trying again.",
+  credential_rejected:
+    "The selected provider has no usable credential for this request. Try another approved model or provider.",
+  payment_required:
+    "The selected provider credential has no available credits. Choose another provider or ask an administrator to restore capacity.",
+  model_unavailable:
+    "This model is not currently available to the selected provider credential. Choose another approved model.",
+  rate_limited:
+    "The selected provider temporarily rate-limited the credential pool. Wait briefly or choose another provider.",
   submission_unknown:
     "Submission could not be confirmed. Check your provider dashboard before starting a new run; it may have incurred charges.",
   output_unavailable:
-    "The provider finished but its output could not be saved. Reopen this result to retry retrieval without generating again.",
+    "The provider finished, but the returned media could not be validated or saved. The daily slot remains used because generation completed.",
   timed_out:
     "This run exceeded its recovery window. Check the provider dashboard before starting another run.",
 };

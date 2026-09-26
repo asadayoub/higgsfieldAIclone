@@ -2,16 +2,22 @@ import type { StudioConfiguration } from "@/lib/studio/validation";
 import { boundedText } from "@/lib/security/bounded-body";
 
 export type LiveOutput =
-  { url: string } | { bytes: Uint8Array; mime: "image/png" };
+  | { url: string; source?: "replicate" | "openrouter" }
+  | { bytes: Uint8Array; mime: "image/png" | "image/jpeg" | "image/webp" };
 export type LiveUpdate = {
   status: "queued" | "processing" | "complete" | "failed" | "cancelled";
   externalId: string;
   outputs?: LiveOutput[];
+  usage?: { cost?: number; isByok?: boolean };
 };
 export class ProviderFailure extends Error {
   constructor(
     public readonly code:
       | "provider_rejected"
+      | "credential_rejected"
+      | "payment_required"
+      | "model_unavailable"
+      | "rate_limited"
       | "provider_failed"
       | "submission_unknown"
       | "output_unavailable",
@@ -20,6 +26,17 @@ export class ProviderFailure extends Error {
   }
 }
 export type Fetcher = typeof fetch;
+
+function safeUsage(raw: unknown): LiveUpdate["usage"] {
+  if (!raw || typeof raw !== "object") return undefined;
+  const value = raw as { cost?: unknown; is_byok?: unknown };
+  return {
+    ...(typeof value.cost === "number" && Number.isFinite(value.cost)
+      ? { cost: Math.max(0, value.cost) }
+      : {}),
+    ...(typeof value.is_byok === "boolean" ? { isByok: value.is_byok } : {}),
+  };
+}
 
 export function providerPayload(
   configuration: StudioConfiguration,
@@ -90,12 +107,16 @@ async function jsonRequest(
       submission ? "submission_unknown" : "provider_failed",
     );
   }
-  if (!response.ok)
-    throw new ProviderFailure(
-      submission && response.status >= 500
-        ? "submission_unknown"
-        : "provider_rejected",
-    );
+  if (!response.ok) {
+    if (submission && response.status >= 500)
+      throw new ProviderFailure("submission_unknown");
+    if (response.status === 401 || response.status === 403)
+      throw new ProviderFailure("credential_rejected");
+    if (response.status === 402) throw new ProviderFailure("payment_required");
+    if (response.status === 404) throw new ProviderFailure("model_unavailable");
+    if (response.status === 429) throw new ProviderFailure("rate_limited");
+    throw new ProviderFailure("provider_rejected");
+  }
   try {
     const raw = await boundedText(response, 30 * 1024 * 1024);
     return JSON.parse(raw) as Record<string, unknown>;
@@ -223,4 +244,184 @@ export class OpenAIImageAdapter {
       },
     ];
   }
+}
+
+function assertOpenRouterId(id: string) {
+  if (!/^[a-zA-Z0-9_-]{1,160}$/.test(id))
+    throw new ProviderFailure("provider_rejected");
+}
+
+export class OpenRouterAdapter {
+  constructor(
+    private secret: string,
+    private fetcher: Fetcher = fetch,
+  ) {}
+
+  async submitImage(
+    configuration: StudioConfiguration,
+    references: string[],
+  ): Promise<LiveUpdate> {
+    const model = configuration.modelId;
+    if (!getOpenRouterImageModels().has(model))
+      throw new ProviderFailure("provider_rejected");
+    const prompt = providerPrompt(configuration);
+    const supportsQuality = model.startsWith("openai/gpt-image-");
+    const supportsResolution = model === "google/gemini-3.1-flash-lite-image";
+    const raw = await jsonRequest(
+      "https://openrouter.ai/api/v1/images",
+      this.secret,
+      {
+        method: "POST",
+        body: JSON.stringify({
+          model,
+          prompt,
+          n: 1,
+          aspect_ratio: configuration.ratio,
+          ...(supportsQuality
+            ? {
+                quality: configuration.quality === "High" ? "high" : "medium",
+              }
+            : {}),
+          ...(supportsResolution
+            ? { resolution: configuration.resolution }
+            : {}),
+          ...(references.length
+            ? {
+                input_references: references.map((url) => ({
+                  type: "image_url",
+                  image_url: { url },
+                })),
+              }
+            : {}),
+        }),
+      },
+      this.fetcher,
+      true,
+      240000,
+    );
+    const data = raw.data as
+      { b64_json?: unknown; media_type?: unknown }[] | undefined;
+    const item = Array.isArray(data) ? data[0] : undefined;
+    const encoded = item?.b64_json;
+    if (
+      typeof encoded !== "string" ||
+      encoded.length > 28 * 1024 * 1024 ||
+      !/^[A-Za-z0-9+/]+={0,2}$/.test(encoded)
+    )
+      throw new ProviderFailure("output_unavailable");
+    const mime =
+      item?.media_type === "image/jpeg" || item?.media_type === "image/webp"
+        ? item.media_type
+        : "image/png";
+    const usage = safeUsage(raw.usage);
+    return {
+      status: "complete",
+      externalId: `image_${crypto.randomUUID()}`,
+      outputs: [
+        { bytes: new Uint8Array(Buffer.from(encoded, "base64")), mime },
+      ],
+      ...(usage ? { usage } : {}),
+    };
+  }
+
+  async submitVideo(
+    configuration: StudioConfiguration,
+    references: string[],
+  ): Promise<LiveUpdate> {
+    if (!getOpenRouterVideoModels().has(configuration.modelId))
+      throw new ProviderFailure("provider_rejected");
+    const raw = await jsonRequest(
+      "https://openrouter.ai/api/v1/videos",
+      this.secret,
+      {
+        method: "POST",
+        body: JSON.stringify({
+          model: configuration.modelId,
+          prompt: providerPrompt(configuration),
+          duration: configuration.duration,
+          resolution: configuration.resolution,
+          aspect_ratio: configuration.ratio,
+          ...(references[0]
+            ? {
+                frame_images: [
+                  {
+                    type: "image_url",
+                    image_url: { url: references[0] },
+                    frame_type: "first_frame",
+                  },
+                ],
+              }
+            : {}),
+        }),
+      },
+      this.fetcher,
+      true,
+      30000,
+    );
+    if (typeof raw.id !== "string")
+      throw new ProviderFailure("submission_unknown");
+    assertOpenRouterId(raw.id);
+    const usage = safeUsage(raw.usage);
+    return {
+      status: "queued",
+      externalId: raw.id,
+      ...(usage ? { usage } : {}),
+    };
+  }
+
+  async pollVideo(id: string): Promise<LiveUpdate> {
+    assertOpenRouterId(id);
+    const raw = await jsonRequest(
+      `https://openrouter.ai/api/v1/videos/${encodeURIComponent(id)}`,
+      this.secret,
+      { method: "GET" },
+      this.fetcher,
+    );
+    if (raw.id !== id) throw new ProviderFailure("provider_failed");
+    const statuses = {
+      pending: "queued",
+      in_progress: "processing",
+      completed: "complete",
+      failed: "failed",
+      cancelled: "cancelled",
+      expired: "failed",
+    } as const;
+    const status = statuses[raw.status as keyof typeof statuses];
+    if (!status) throw new ProviderFailure("provider_failed");
+    const usage = safeUsage(raw.usage);
+    return {
+      status,
+      externalId: id,
+      ...(status === "complete"
+        ? {
+            outputs: [
+              {
+                url: `https://openrouter.ai/api/v1/videos/${encodeURIComponent(id)}/content?index=0`,
+                source: "openrouter" as const,
+              },
+            ],
+          }
+        : {}),
+      ...(usage ? { usage } : {}),
+    };
+  }
+}
+
+function providerPrompt(configuration: StudioConfiguration) {
+  return configuration.preset === "None"
+    ? configuration.prompt
+    : `${configuration.prompt}\nCreative direction: ${configuration.preset}.`;
+}
+
+function getOpenRouterImageModels() {
+  return new Set([
+    "recraft/recraft-v4.1-flash",
+    "google/gemini-3.1-flash-lite-image",
+    "openai/gpt-image-1-mini",
+    "openai/gpt-image-2",
+  ]);
+}
+
+function getOpenRouterVideoModels() {
+  return new Set(["bytedance/seedance-2.0-mini", "google/veo-3.1"]);
 }

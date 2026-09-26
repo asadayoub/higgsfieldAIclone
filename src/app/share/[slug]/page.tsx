@@ -23,7 +23,7 @@ export default async function SharePage({
       <p className="text-xs tracking-widest text-[var(--action)] uppercase">
         Publicly shared · live AI output
       </p>
-      <h1 className="mt-3 text-3xl font-semibold">A frame worth sharing.</h1>
+      <h1 className="mt-3 text-3xl font-semibold">{asset.title}</h1>
       <div className="mt-7 overflow-hidden rounded-3xl border border-white/10">
         {asset.media === "video" ? (
           <video
@@ -35,7 +35,7 @@ export default async function SharePage({
         ) : (
           <Image
             src={asset.url}
-            alt="Publicly shared generated output"
+            alt={asset.alt}
             width={1536}
             height={1536}
             unoptimized
@@ -47,6 +47,11 @@ export default async function SharePage({
         This output was explicitly published by its owner. References and
         private recipe details are not shared.
       </p>
+      {asset.showcaseListed ? (
+        <p className="mt-2 text-xs text-[var(--text-faint)]">
+          Listed in the public Explore showcase.
+        </p>
+      ) : null}
     </main>
   );
 }

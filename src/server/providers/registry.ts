@@ -1,7 +1,12 @@
 import "server-only";
 import { GuidedProvider } from "./guided";
 import type { ProviderAdapter, ProviderId } from "./types";
-import { OpenAIImageAdapter, ReplicateAdapter } from "./live";
+import {
+  OpenAIImageAdapter,
+  OpenRouterAdapter,
+  ReplicateAdapter,
+} from "./live";
+import { HuggingFaceImageAdapter } from "./huggingface";
 
 const adapters = new Map<ProviderId, ProviderAdapter>([
   ["guided", new GuidedProvider()],
@@ -26,7 +31,20 @@ export function getLiveProvider(
   id: "replicate",
   secret: string,
 ): ReplicateAdapter;
-export function getLiveProvider(id: "openai" | "replicate", secret: string) {
+export function getLiveProvider(
+  id: "openrouter",
+  secret: string,
+): OpenRouterAdapter;
+export function getLiveProvider(
+  id: "huggingface",
+  secret: string,
+): HuggingFaceImageAdapter;
+export function getLiveProvider(
+  id: "openai" | "replicate" | "openrouter" | "huggingface",
+  secret: string,
+) {
+  if (id === "huggingface") return new HuggingFaceImageAdapter(secret);
+  if (id === "openrouter") return new OpenRouterAdapter(secret);
   return id === "openai"
     ? new OpenAIImageAdapter(secret)
     : new ReplicateAdapter(secret);

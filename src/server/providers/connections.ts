@@ -120,7 +120,7 @@ export async function storeProviderConnection(input: {
 
 export async function getProviderConnectionSecret(
   ownerId: string,
-  provider: ConnectableProviderId,
+  provider: ConnectableProviderId | "openai" | "replicate",
 ): Promise<string | null> {
   const { data, error } = await createSupabaseAdminClient()
     .from("provider_credentials")

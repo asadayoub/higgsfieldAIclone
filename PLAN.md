@@ -1,5 +1,9 @@
 # Build Plan
 
+> **Architecture update — 2026-09-26:** T09.1 supersedes the guided/live execution model below and establishes real OpenRouter image and video generation. Verified users receive three system-funded runs per UTC day through a server-only platform key; additional runs can explicitly use an encrypted personal OpenRouter key. The two funding modes never fall back to one another silently. See [`task-workbooks/09-1-openrouter-real-media.md`](task-workbooks/09-1-openrouter-real-media.md) for its migration, quota, security, rollout, and verification plan.
+
+> **Provider capacity update — 2026-09-26:** T09.2 adds explicit Hugging Face system-funded image generation backed by a superadmin-managed encrypted credential pool. Atomic leases, health transitions, per-token concurrency and daily limits, bounded two-token failover, and the existing shared user allowance control execution. Hugging Face never silently falls back to OpenRouter. See [`task-workbooks/09-2-huggingface-token-pool.md`](task-workbooks/09-2-huggingface-token-pool.md).
+
 ## Product decision
 
 Build one unusually polished product loop first, then expand the platform through stable provider and workflow contracts:

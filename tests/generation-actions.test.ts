@@ -7,9 +7,11 @@ const mocks = vi.hoisted(() => ({
   cancel: vi.fn(),
   favorite: vi.fn(),
   publish: vi.fn(),
+  updatePublication: vi.fn(),
   revoke: vi.fn(),
 }));
 vi.mock("server-only", () => ({}));
+vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 vi.mock("@/server/auth/session", () => ({ getSessionUser: mocks.session }));
 vi.mock("@/server/generation/service", () => ({
   submitRun: mocks.submit,
@@ -18,6 +20,7 @@ vi.mock("@/server/generation/service", () => ({
   cancelRun: mocks.cancel,
   favoriteAsset: mocks.favorite,
   publishAsset: mocks.publish,
+  updatePublicationShowcase: mocks.updatePublication,
   revokePublication: mocks.revoke,
 }));
 import {
@@ -42,7 +45,11 @@ describe("generation action boundaries", () => {
     const input = { ownerId: "forged-owner" };
     mocks.submit.mockResolvedValue({ id: "run-id" });
     await submitGeneration(input);
-    expect(mocks.submit).toHaveBeenCalledWith("actual-session-owner", input);
+    expect(mocks.submit).toHaveBeenCalledWith(
+      "actual-session-owner",
+      false,
+      input,
+    );
   });
   it("does not return arbitrary service errors", async () => {
     mocks.submit.mockRejectedValue(
@@ -52,15 +59,25 @@ describe("generation action boundaries", () => {
     expect(JSON.stringify(response)).not.toContain("fixture-key");
   });
   it("requires explicit publication consent and validates mutation values", async () => {
-    await shareAsset("asset-id", false);
+    await shareAsset("asset-id", { confirmed: false });
     expect(mocks.publish).not.toHaveBeenCalled();
     await setAssetFavorite("asset-id", "true" as unknown as boolean);
     expect(mocks.favorite).not.toHaveBeenCalled();
     mocks.publish.mockResolvedValue("public-slug");
-    expect(await shareAsset("asset-id", true)).toEqual({ slug: "public-slug" });
+    const publication = {
+      confirmed: true,
+      listInShowcase: false,
+      title: "",
+      category: "",
+      alt: "",
+    };
+    expect(await shareAsset("asset-id", publication)).toEqual({
+      slug: "public-slug",
+    });
     expect(mocks.publish).toHaveBeenCalledWith(
       "actual-session-owner",
       "asset-id",
+      publication,
     );
   });
   it("rejects foreign origins and oversized bodies before a generation action", async () => {

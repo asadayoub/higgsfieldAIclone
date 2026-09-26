@@ -23,7 +23,7 @@ function unavailableState(): AuthFormState {
   return {
     status: "error",
     message:
-      "Account access is not configured yet. Guided mode is still available.",
+      "Account access is not configured yet. Public inspiration remains available.",
   };
 }
 

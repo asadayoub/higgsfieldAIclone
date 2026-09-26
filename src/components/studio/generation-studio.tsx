@@ -2,9 +2,15 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useState, useRef } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { resultHref, type RunResponse } from "@/lib/generation/contracts";
+import {
+  configurationHref,
+  resultHref,
+  type FreeAllowance,
+  type RunResponse,
+} from "@/lib/generation/contracts";
+import type { Route } from "next";
 import {
   ImageIcon,
   Video,
@@ -14,9 +20,9 @@ import {
   LockKeyhole,
 } from "lucide-react";
 import {
-  studioModels,
+  modelsForFunding,
   studioPresets,
-  getStudioModel,
+  type FundingSource,
   type StudioModel,
 } from "@/content/studio-models";
 import {
@@ -31,7 +37,12 @@ import { ReferenceInput, type StudioReference } from "./reference-input";
 import { Dialog } from "@/components/ui/dialog";
 import { useToast } from "@/components/ui/toast";
 import { cn } from "@/lib/cn";
-import { GuidedRunner, startGuidedRun } from "./guided-runner";
+
+type LiveProvider = "openrouter" | "huggingface";
+type Availability = Record<
+  LiveProvider,
+  Record<FundingSource, Record<"image" | "video", boolean>>
+>;
 
 function defaults(model: StudioModel) {
   return {
@@ -45,15 +56,35 @@ function defaults(model: StudioModel) {
   };
 }
 
-function initialConfiguration(parsed: ParsedStudioRecipe): StudioConfiguration {
+function availableFundingModels(
+  media: "image" | "video",
+  funding: FundingSource,
+  availability: Availability,
+) {
+  const all = modelsForFunding(media, funding);
+  const enabled = all.filter((model) => {
+    const provider: LiveProvider =
+      model.provider === "huggingface" ? "huggingface" : "openrouter";
+    return availability[provider][funding][media];
+  });
+  return enabled.length ? enabled : all;
+}
+
+function initialConfiguration(
+  parsed: ParsedStudioRecipe,
+  availability: Availability,
+): StudioConfiguration {
   const recipe = parsed.recipe;
+  const candidates = availableFundingModels(
+    recipe?.mode ?? "image",
+    "system_free",
+    availability,
+  );
   const model =
-    studioModels.find(
-      (item) => item.name === recipe?.model && item.media === recipe.mode,
-    ) ?? studioModels.find((item) => item.media === (recipe?.mode ?? "image"))!;
+    candidates.find((item) => item.name === recipe?.model) ?? candidates[0]!;
   return {
     ...defaults(model),
-    execution: "guided",
+    execution: "live",
     prompt: recipe?.prompt ?? "",
     preset: studioPresets.some((preset) => preset === recipe?.preset)
       ? recipe!.preset
@@ -63,21 +94,6 @@ function initialConfiguration(parsed: ParsedStudioRecipe): StudioConfiguration {
         ? recipe.ratio
         : model.ratios[0]!,
     referenceCount: 0,
-    ...(recipe?.quality && model.qualities.includes(recipe.quality)
-      ? { quality: recipe.quality }
-      : {}),
-    ...(recipe?.resolution && model.resolutions.includes(recipe.resolution)
-      ? { resolution: recipe.resolution }
-      : {}),
-    ...(recipe?.quantity &&
-    Number.isInteger(recipe.quantity) &&
-    recipe.quantity <= model.maxQuantity &&
-    recipe.quantity > 0
-      ? { quantity: recipe.quantity }
-      : {}),
-    ...(recipe?.duration && model.durations.includes(recipe.duration)
-      ? { duration: recipe.duration }
-      : {}),
   };
 }
 
@@ -111,37 +127,48 @@ function SelectControl({
 export function GenerationStudio({
   parsed,
   signedIn,
-  connectedProviders,
-  enabledLiveModels,
+  emailVerified,
+  personalKeyConnected,
+  allowance,
+  availability,
 }: {
   parsed: ParsedStudioRecipe;
   signedIn: boolean;
-  connectedProviders: string[];
-  enabledLiveModels: string[];
+  emailVerified: boolean;
+  personalKeyConnected: boolean;
+  allowance: FreeAllowance | null;
+  availability: Availability;
 }) {
+  const [fundingSource, setFundingSource] =
+    useState<FundingSource>("system_free");
   const [configuration, setConfiguration] = useState(() =>
-    initialConfiguration(parsed),
+    initialConfiguration(parsed, availability),
   );
   const [references, setReferences] = useState<StudioReference[]>([]);
   const [modelSearch, setModelSearch] = useState("");
   const [errors, setErrors] = useState<string[]>([]);
   const [reviewOpen, setReviewOpen] = useState(false);
+  const [confirmed, setConfirmed] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [liveId, setLiveId] = useState<string | null>(null);
+  const [runId, setRunId] = useState<string | null>(null);
   const submissionLock = useRef(false);
   const router = useRouter();
   const { notify } = useToast();
-  const model = getStudioModel(configuration.modelId, configuration.execution)!;
+  const availableModels = availableFundingModels(
+    configuration.media,
+    fundingSource,
+    availability,
+  );
+  const model =
+    availableModels.find((item) => item.id === configuration.modelId) ??
+    availableModels[0]!;
+  const liveProvider: LiveProvider =
+    model.provider === "huggingface" ? "huggingface" : "openrouter";
+  const providerName =
+    liveProvider === "huggingface" ? "Hugging Face" : "OpenRouter";
   const source = parsed.recipe?.source
     ? findCreation(parsed.recipe.source)
     : undefined;
-  const availableModels = studioModels
-    .map((item) => getStudioModel(item.id, configuration.execution)!)
-    .filter(
-      (item) =>
-        item.media === configuration.media &&
-        (configuration.execution === "guided" || item.provider),
-    );
   const matchingModels = availableModels.filter((item) =>
     `${item.name} ${item.description}`
       .toLowerCase()
@@ -155,91 +182,71 @@ export function GenerationStudio({
     setErrors([]);
     setConfiguration((current) => ({ ...current, [key]: value }));
   }
+
   function selectModel(next: StudioModel) {
-    setConfiguration((current) => ({ ...current, ...defaults(next) }));
-    setErrors([]);
-    setModelSearch("");
-  }
-  function selectMedia(media: "image" | "video") {
-    const next = studioModels.find((item) => item.media === media)!;
     setConfiguration((current) => ({
       ...current,
       ...defaults(next),
-      execution: "guided",
+      execution: "live",
     }));
     setErrors([]);
+    setModelSearch("");
   }
-  function selectExecution(execution: "guided" | "live") {
-    if (execution === "live") {
-      const next = studioModels.find(
-        (item) => item.media === configuration.media && item.provider,
-      );
-      if (!next) {
-        setErrors([
-          "Live video adapters are not enabled. Use guided mode for motion studies.",
-        ]);
-        return;
-      }
-      setConfiguration((current) => ({
-        ...current,
-        ...defaults(getStudioModel(next.id, "live")!),
-        execution,
-      }));
-    } else update("execution", execution);
+
+  function selectMedia(media: "image" | "video") {
+    const next = availableFundingModels(media, fundingSource, availability)[0]!;
+    selectModel(next);
   }
+
+  function selectFunding(nextFunding: FundingSource) {
+    const candidates = availableFundingModels(
+      configuration.media,
+      nextFunding,
+      availability,
+    );
+    const next =
+      candidates.find((item) => item.id === configuration.modelId) ??
+      candidates[0]!;
+    setFundingSource(nextFunding);
+    selectModel(next);
+  }
+
   function review() {
     const input = { ...configuration, referenceCount: references.length };
+    if (!signedIn) {
+      const returnTo = configurationHref(input);
+      router.push(`/account?next=${encodeURIComponent(returnTo)}` as Route);
+      return;
+    }
     const issues = validateStudioConfiguration(input);
-    if (
-      input.execution === "live" &&
-      input.modelId === "hailuo" &&
-      references.some(
-        (reference) =>
-          Math.abs(reference.width / reference.height - 16 / 9) > 0.02,
-      )
-    )
-      issues.push("Use a 16:9 reference for this Hailuo workflow.");
-    if (
-      input.execution === "live" &&
-      !enabledLiveModels.includes(input.modelId)
-    )
+    if (fundingSource === "system_free") {
+      if (!emailVerified)
+        issues.push("Verify your email before using the free daily allowance.");
+      if (!allowance?.available)
+        issues.push("The free daily allowance is temporarily unavailable.");
+      if (!allowance?.remaining)
+        issues.push("Your three free generations are used for today.");
+    } else if (!personalKeyConnected) {
       issues.push(
-        "This live workflow is disabled. A superadmin can enable the provider and media type.",
+        "Connect a valid OpenRouter key before using personal billing.",
       );
-    if (
-      input.execution === "live" &&
-      (!signedIn ||
-        !model.provider ||
-        !connectedProviders.includes(model.provider))
-    )
-      issues.push("Connect a valid provider key before using live mode.");
-    if (
-      input.execution === "live" &&
-      references.some((reference) => !reference.path)
-    )
-      issues.push("Upload each live reference privately before continuing.");
+    }
+    if (!availability[liveProvider][fundingSource][input.media])
+      issues.push(`This ${providerName} workflow is currently disabled.`);
+    if (references.some((reference) => !reference.path))
+      issues.push("Upload each reference privately before continuing.");
     setErrors(issues);
+    setConfirmed(false);
     if (!issues.length) setReviewOpen(true);
   }
 
-  function runGuided() {
-    try {
-      startGuidedRun({ ...configuration, referenceCount: references.length });
-      setReviewOpen(false);
-      notify("Guided study started. Results appear below the composer.");
-    } catch {
-      setReviewOpen(false);
-      setErrors([
-        "Could not save this run. Enable browser storage and review a valid guided recipe before trying again.",
-      ]);
-    }
-  }
   function saveDraft() {
     try {
       localStorage.setItem(
         "lumaforge:studio-draft",
         JSON.stringify({
           ...configuration,
+          fundingSource,
           referencePaths: references.flatMap((reference) =>
             reference.path ? [reference.path] : [],
           ),
@@ -253,13 +260,13 @@ export function GenerationStudio({
     }
   }
 
-  async function runLive() {
-    if (submissionLock.current) return;
+  async function run() {
+    if (submissionLock.current || !confirmed) return;
     submissionLock.current = true;
     setSubmitting(true);
     setReviewOpen(false);
     const id = crypto.randomUUID();
-    setLiveId(id);
+    setRunId(id);
     setErrors([]);
     try {
       const response = await fetch("/api/generations", {
@@ -274,7 +281,9 @@ export function GenerationStudio({
           referencePaths: references.flatMap((reference) =>
             reference.path ? [reference.path] : [],
           ),
-          confirmedCost: true,
+          fundingSource,
+          confirmedAllowance: fundingSource === "system_free",
+          confirmedExternalCost: fundingSource === "personal_key",
         }),
       });
       const result = (await response.json()) as RunResponse;
@@ -282,198 +291,17 @@ export function GenerationStudio({
       else
         setErrors([
           result.error ??
-            "Submission could not be confirmed. Open this run or check your provider dashboard before starting another.",
+            "Submission could not be confirmed. Open the run before trying another generation.",
         ]);
     } catch {
       setErrors([
-        "Connection interrupted. Open this run or check your provider dashboard before starting another; charges may apply.",
+        "Connection interrupted. Open the persisted run before trying again; the request may have been accepted.",
       ]);
     } finally {
       setSubmitting(false);
       submissionLock.current = false;
     }
   }
-
-  const composer = (
-    <section
-      aria-label="Generation composer"
-      className="rounded-[1.5rem] border border-white/10 bg-[var(--panel)] p-5 sm:p-6"
-    >
-      <div className="mb-6 flex items-center justify-between">
-        <h2 className="text-sm font-semibold">Creative recipe</h2>
-        <span className="text-[10px] tracking-[0.1em] text-[var(--text-faint)] uppercase">
-          {configuration.media}
-        </span>
-      </div>
-      <div
-        className="mb-5 flex rounded-full bg-black/30 p-1"
-        aria-label="Execution mode"
-      >
-        {(["guided", "live"] as const).map((execution) => (
-          <button
-            key={execution}
-            type="button"
-            aria-pressed={configuration.execution === execution}
-            onClick={() => selectExecution(execution)}
-            className={cn(
-              "min-h-9 flex-1 cursor-pointer rounded-full text-xs font-semibold",
-              configuration.execution === execution
-                ? "bg-white text-black"
-                : "text-[var(--text-muted)] hover:text-white",
-            )}
-          >
-            {execution === "guided" ? "Guided · free" : "Live · your key"}
-          </button>
-        ))}
-      </div>
-      <details className="mb-5 rounded-2xl border border-white/10 bg-[var(--control)]">
-        <summary className="min-h-16 cursor-pointer list-none px-4 py-3">
-          <p className="text-xs font-semibold">
-            {model.name}{" "}
-            <span className="float-right text-[var(--text-faint)]">⌄</span>
-          </p>
-          <p className="mt-1 text-[10px] text-[var(--text-faint)]">
-            {model.description}
-          </p>
-        </summary>
-        <div className="space-y-2 border-t border-white/10 p-3">
-          <input
-            type="search"
-            value={modelSearch}
-            onChange={(event) => setModelSearch(event.target.value)}
-            aria-label="Search generation models"
-            placeholder="Search models"
-            className="min-h-10 w-full rounded-xl border border-white/10 bg-black/20 px-3 text-xs"
-          />
-          {matchingModels.map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              onClick={(event) => {
-                selectModel(item);
-                event.currentTarget.closest("details")?.removeAttribute("open");
-              }}
-              className="block w-full cursor-pointer rounded-xl p-3 text-left hover:bg-white/7"
-            >
-              <p className="text-xs font-semibold">{item.name}</p>
-              <p className="mt-1 text-[10px] text-[var(--text-faint)]">
-                {item.description}
-              </p>
-            </button>
-          ))}
-          {!matchingModels.length ? (
-            <p className="p-3 text-xs text-[var(--text-faint)]">
-              No compatible models found.
-            </p>
-          ) : null}
-        </div>
-      </details>
-      <label
-        className="block text-xs font-semibold text-[var(--text-muted)]"
-        htmlFor="studio-prompt"
-      >
-        Prompt
-      </label>
-      <textarea
-        id="studio-prompt"
-        value={configuration.prompt}
-        onChange={(event) => update("prompt", event.target.value)}
-        maxLength={1200}
-        rows={5}
-        placeholder="Describe the subject, material, light, environment, and feeling…"
-        className="mt-2 w-full resize-y rounded-2xl border border-white/10 bg-black/20 p-4 text-sm leading-6 text-white placeholder:text-[var(--text-faint)]"
-      />
-      <p className="mt-1 text-right text-[10px] text-[var(--text-faint)]">
-        {configuration.prompt.length} / 1,200
-      </p>
-      <div className="mt-5 grid grid-cols-2 gap-3">
-        <SelectControl
-          label="Preset"
-          value={configuration.preset}
-          options={studioPresets}
-          onChange={(value) => update("preset", value)}
-        />
-        <SelectControl
-          label="Aspect ratio"
-          value={configuration.ratio}
-          options={model.ratios}
-          onChange={(value) => update("ratio", value)}
-        />
-        <SelectControl
-          label="Quality"
-          value={configuration.quality}
-          options={model.qualities}
-          onChange={(value) => update("quality", value)}
-        />
-        <SelectControl
-          label="Resolution"
-          value={configuration.resolution}
-          options={model.resolutions}
-          onChange={(value) => update("resolution", value)}
-        />
-        {configuration.media === "video" ? (
-          <SelectControl
-            label="Duration (seconds)"
-            value={String(configuration.duration)}
-            options={model.durations.map(String)}
-            onChange={(value) => update("duration", Number(value))}
-          />
-        ) : (
-          <SelectControl
-            label="Outputs"
-            value={String(configuration.quantity)}
-            options={Array.from({ length: model.maxQuantity }, (_, index) =>
-              String(index + 1),
-            )}
-            onChange={(value) => update("quantity", Number(value))}
-          />
-        )}
-      </div>
-      <div className="mt-6 border-t border-white/8 pt-5">
-        <ReferenceInput
-          references={references}
-          onChange={setReferences}
-          maxCount={model.maxReferences}
-          signedIn={signedIn}
-        />
-      </div>
-      {configuration.execution === "live" ? (
-        <div className="mt-5 rounded-xl border border-[var(--warning)]/20 bg-[var(--warning)]/5 p-3 text-xs leading-5 text-[var(--warning)]">
-          Provider calls may incur charges on your connected account.{" "}
-          <Link href="/settings/providers" className="font-semibold underline">
-            Manage keys
-          </Link>
-        </div>
-      ) : (
-        <p className="mt-5 flex items-center gap-2 text-xs text-[var(--text-muted)]">
-          <ShieldCheck
-            className="size-4 text-[var(--action)]"
-            aria-hidden="true"
-          />
-          Guided studies never call an external model.
-        </p>
-      )}
-      {errors.length ? (
-        <ul
-          role="alert"
-          className="mt-4 space-y-1 text-xs leading-5 text-[var(--danger)]"
-        >
-          {errors.map((error) => (
-            <li key={error}>{error}</li>
-          ))}
-        </ul>
-      ) : null}
-      <button
-        type="button"
-        onClick={review}
-        disabled={submitting}
-        className="mt-5 flex min-h-12 w-full cursor-pointer items-center justify-center gap-2 rounded-full bg-[var(--action)] px-5 text-sm font-semibold text-[var(--action-ink)] hover:bg-[var(--action-hover)]"
-      >
-        <WandSparkles className="size-4" aria-hidden="true" />
-        Review generation
-      </button>
-    </section>
-  );
 
   return (
     <main className="mx-auto min-h-[calc(100vh-4rem)] max-w-[1600px] px-4 py-7 sm:px-6 lg:px-8">
@@ -509,13 +337,15 @@ export function GenerationStudio({
           })}
         </div>
       </div>
+
       {parsed.recipe ? (
         <p className="mb-5 flex items-center gap-2 text-xs text-[var(--text-muted)]">
           <Sparkles
             className="size-4 text-[var(--action)]"
             aria-hidden="true"
           />
-          Recipe loaded. Every setting below is editable.
+          Inspiration recipe loaded. Choose a real model and review every
+          setting.
         </p>
       ) : null}
       {parsed.notices.map((notice) => (
@@ -523,6 +353,7 @@ export function GenerationStudio({
           {notice}
         </p>
       ))}
+
       <div
         className={cn(
           "grid gap-5 lg:items-start",
@@ -554,43 +385,220 @@ export function GenerationStudio({
             <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 to-transparent p-6 pt-20">
               <p className="text-[10px] tracking-[0.18em] text-[var(--action)] uppercase">
                 {source
-                  ? "Inspiration, not your generated output"
-                  : "Your next visual starts here"}
+                  ? "Inspiration, not generated output"
+                  : `Real ${providerName} generation`}
               </p>
               <h2 className="mt-2 text-2xl font-semibold tracking-[-0.03em]">
                 {source?.title ?? "A blank frame. An open direction."}
               </h2>
               <p className="mt-2 max-w-md text-xs leading-5 text-white/50">
-                Build your recipe. Review settings and privacy before execution.
+                Generated media is copied into your private workspace.
               </p>
             </div>
           </div>
           <div className="flex items-center justify-between border-t border-white/8 p-4 text-xs text-[var(--text-faint)]">
             <span className="inline-flex items-center gap-2">
-              <LockKeyhole className="size-3" aria-hidden="true" />
-              Private by default
+              <LockKeyhole className="size-3" aria-hidden="true" /> Private by
+              default
             </span>
-            <Link href="/" className="hover:text-white">
-              Find inspiration
-            </Link>
+            <Link href="/">Find inspiration</Link>
           </div>
         </section>
-        {composer}
-      </div>
-      <GuidedRunner />
-      {liveId && (
-        <p
-          role="status"
-          className="mt-5 text-sm leading-7 text-[var(--text-muted)]"
+
+        <section
+          aria-label="Generation composer"
+          className="rounded-[1.5rem] border border-white/10 bg-[var(--panel)] p-5 sm:p-6"
         >
+          <h2 className="text-sm font-semibold">Creative recipe</h2>
+          <fieldset className="mt-5 grid gap-2" aria-label="Generation funding">
+            {(["system_free", "personal_key"] as const).map((funding) => (
+              <button
+                key={funding}
+                type="button"
+                aria-pressed={fundingSource === funding}
+                onClick={() => selectFunding(funding)}
+                className={cn(
+                  "min-h-14 rounded-2xl border px-4 text-left text-xs",
+                  fundingSource === funding
+                    ? "border-[var(--action)] bg-[var(--action)]/8"
+                    : "border-white/10 bg-black/15",
+                )}
+              >
+                <span className="font-semibold">
+                  {funding === "system_free"
+                    ? `Free daily allowance${allowance ? ` — ${allowance.remaining} of 3 remaining` : ""}`
+                    : "Personal OpenRouter key"}
+                </span>
+                <span className="mt-1 block text-[var(--text-faint)]">
+                  {funding === "system_free"
+                    ? "Platform-funded low-cost models. Resets at 00:00 UTC."
+                    : "Charges your connected OpenRouter account."}
+                </span>
+              </button>
+            ))}
+          </fieldset>
+
+          <details className="mt-5 rounded-2xl border border-white/10 bg-[var(--control)]">
+            <summary className="min-h-16 cursor-pointer list-none px-4 py-3">
+              <p className="text-xs font-semibold">
+                {model.name}
+                <span className="float-right">⌄</span>
+              </p>
+              <p className="mt-1 text-[10px] text-[var(--text-faint)]">
+                {model.description}
+              </p>
+            </summary>
+            <div className="space-y-2 border-t border-white/10 p-3">
+              <input
+                type="search"
+                value={modelSearch}
+                onChange={(event) => setModelSearch(event.target.value)}
+                aria-label="Search generation models"
+                placeholder="Search models"
+                className="min-h-10 w-full rounded-xl border border-white/10 bg-black/20 px-3 text-xs"
+              />
+              {matchingModels.map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={(event) => {
+                    selectModel(item);
+                    event.currentTarget
+                      .closest("details")
+                      ?.removeAttribute("open");
+                  }}
+                  className="block w-full rounded-xl p-3 text-left hover:bg-white/7"
+                >
+                  <p className="text-xs font-semibold">{item.name}</p>
+                  <p className="mt-1 text-[10px] text-[var(--text-faint)]">
+                    {item.provider === "huggingface"
+                      ? "Hugging Face"
+                      : "OpenRouter"}{" "}
+                    · {item.description}
+                  </p>
+                </button>
+              ))}
+            </div>
+          </details>
+
+          <label
+            className="mt-5 block text-xs font-semibold text-[var(--text-muted)]"
+            htmlFor="studio-prompt"
+          >
+            Prompt
+          </label>
+          <textarea
+            id="studio-prompt"
+            value={configuration.prompt}
+            onChange={(event) => update("prompt", event.target.value)}
+            maxLength={1200}
+            rows={5}
+            placeholder="Describe the subject, material, light, environment, and feeling…"
+            className="mt-2 w-full resize-y rounded-2xl border border-white/10 bg-black/20 p-4 text-sm leading-6"
+          />
+          <p className="mt-1 text-right text-[10px] text-[var(--text-faint)]">
+            {configuration.prompt.length} / 1,200
+          </p>
+          <div className="mt-5 grid grid-cols-2 gap-3">
+            <SelectControl
+              label="Preset"
+              value={configuration.preset}
+              options={studioPresets}
+              onChange={(value) => update("preset", value)}
+            />
+            <SelectControl
+              label="Aspect ratio"
+              value={
+                model.ratios.includes(configuration.ratio)
+                  ? configuration.ratio
+                  : model.ratios[0]!
+              }
+              options={model.ratios}
+              onChange={(value) => update("ratio", value)}
+            />
+            <SelectControl
+              label="Quality"
+              value={
+                model.qualities.includes(configuration.quality)
+                  ? configuration.quality
+                  : model.qualities[0]!
+              }
+              options={model.qualities}
+              onChange={(value) => update("quality", value)}
+            />
+            <SelectControl
+              label="Resolution"
+              value={
+                model.resolutions.includes(configuration.resolution)
+                  ? configuration.resolution
+                  : model.resolutions[0]!
+              }
+              options={model.resolutions}
+              onChange={(value) => update("resolution", value)}
+            />
+            {configuration.media === "video" ? (
+              <SelectControl
+                label="Duration (seconds)"
+                value={String(configuration.duration)}
+                options={model.durations.map(String)}
+                onChange={(value) => update("duration", Number(value))}
+              />
+            ) : null}
+          </div>
+          <div className="mt-6 border-t border-white/8 pt-5">
+            <ReferenceInput
+              references={references}
+              onChange={setReferences}
+              maxCount={model.maxReferences}
+              signedIn={signedIn}
+            />
+          </div>
+          <div className="mt-5 rounded-xl border border-[var(--warning)]/20 bg-[var(--warning)]/5 p-3 text-xs leading-5 text-[var(--warning)]">
+            {fundingSource === "system_free"
+              ? "A provider-accepted request consumes one of your three combined daily generations."
+              : "This run may incur charges on your connected OpenRouter account."}{" "}
+            <Link
+              href="/settings/providers"
+              className="font-semibold underline"
+            >
+              {fundingSource === "personal_key"
+                ? "Manage key"
+                : "Provider settings"}
+            </Link>
+          </div>
+          {errors.length ? (
+            <ul
+              role="alert"
+              className="mt-4 space-y-1 text-xs leading-5 text-[var(--danger)]"
+            >
+              {errors.map((error) => (
+                <li key={error}>{error}</li>
+              ))}
+            </ul>
+          ) : null}
+          <button
+            type="button"
+            onClick={review}
+            disabled={submitting}
+            className="mt-5 flex min-h-12 w-full items-center justify-center gap-2 rounded-full bg-[var(--action)] px-5 text-sm font-semibold text-[var(--action-ink)] disabled:opacity-50"
+          >
+            <WandSparkles className="size-4" aria-hidden="true" /> Review
+            generation
+          </button>
+        </section>
+      </div>
+
+      {runId ? (
+        <p role="status" className="mt-5 text-sm text-[var(--text-muted)]">
           {submitting
-            ? "Submitting your confirmed live run. Image generation may take several minutes."
-            : "Latest live submission:"}{" "}
-          <Link href={resultHref(liveId)} className="underline">
+            ? `Submitting the confirmed ${providerName} run…`
+            : "Latest submission:"}{" "}
+          <Link href={resultHref(runId)} className="underline">
             Open persisted run →
           </Link>
         </p>
-      )}
+      ) : null}
+
       <Dialog
         open={reviewOpen}
         onClose={() => setReviewOpen(false)}
@@ -605,18 +613,16 @@ export function GenerationStudio({
           </h2>
           <dl className="mt-6 grid grid-cols-2 gap-4 text-xs">
             {[
-              ["Mode", configuration.execution],
-              ["Model", model.name],
               [
-                "Provider",
-                configuration.execution === "guided"
-                  ? "Local guided engine"
-                  : (model.provider ?? "Unavailable"),
+                "Funding",
+                fundingSource === "system_free"
+                  ? "Free daily allowance"
+                  : "Personal OpenRouter key",
               ],
+              ["Model", model.name],
+              ["Provider", providerName],
               ["Privacy", "Private"],
               ["Aspect ratio", configuration.ratio],
-              ["Outputs", String(configuration.quantity)],
-              ["Quality", configuration.quality],
               ["Resolution", configuration.resolution],
               ["References", String(references.length)],
               ...(configuration.media === "video"
@@ -625,49 +631,51 @@ export function GenerationStudio({
             ].map(([term, value]) => (
               <div key={term}>
                 <dt className="text-[var(--text-faint)]">{term}</dt>
-                <dd className="mt-1 font-semibold capitalize">{value}</dd>
+                <dd className="mt-1 font-semibold">{value}</dd>
               </div>
             ))}
           </dl>
           <p className="mt-5 rounded-xl bg-black/25 p-4 text-xs leading-6 text-[var(--text-muted)]">
             {configuration.prompt}
           </p>
-          <p className="mt-5 text-xs leading-5 text-[var(--text-muted)]">
-            {configuration.execution === "live"
-              ? "A real run sends your prompt and selected references to the named provider and may incur charges. No provider call has been made."
-              : "A guided run uses authored study assets, not a live AI model. No external charges apply."}
+          <p className="mt-5 text-xs leading-6 text-[var(--text-muted)]">
+            {fundingSource === "system_free"
+              ? `${providerName} will run a real generation using an authorized platform credential. Acceptance consumes one daily slot, leaving ${Math.max(0, (allowance?.remaining ?? 1) - 1)}.`
+              : `OpenRouter will charge your connected account. Pricing: ${model.unitPrice}. No free slot will be used.`}
           </p>
-          <p className="mt-3 text-xs leading-5 text-[var(--text-faint)]">
-            {configuration.execution === "guided"
-              ? "Prompt and preset select an authored study. References and output settings do not change its pixels. Video results are motion posters, not generated clips. This run is saved only on this browser."
-              : "Confirming submits one paid generation using your connected key. Preset direction is appended to the prompt. References are shared only with the named provider; Replicate video also uses MiniMax. A synchronous OpenAI request may take up to four minutes; an interrupted submission is never automatically retried."}
-          </p>
-          {configuration.execution === "guided" && (
-            <button
-              type="button"
-              onClick={runGuided}
-              className="mt-6 min-h-11 w-full cursor-pointer rounded-full bg-[var(--action)] text-sm font-semibold text-[var(--action-ink)]"
-            >
-              Run free guided study
-            </button>
-          )}
-          {configuration.execution === "live" && (
-            <button
-              type="button"
-              disabled={submitting}
-              onClick={runLive}
-              className="mt-6 min-h-11 w-full rounded-full bg-[var(--action)] text-sm font-semibold text-[var(--action-ink)] disabled:opacity-50"
-            >
-              Confirm paid live generation
-            </button>
-          )}
+          <label className="mt-5 flex items-start gap-3 rounded-xl border border-white/10 p-4 text-xs leading-5">
+            <input
+              type="checkbox"
+              checked={confirmed}
+              onChange={(event) => setConfirmed(event.target.checked)}
+              className="mt-1"
+            />
+            <span>
+              {fundingSource === "system_free"
+                ? "I understand when the daily slot is consumed."
+                : "I confirm this externally billed OpenRouter generation."}
+            </span>
+          </label>
+          <button
+            type="button"
+            disabled={submitting || !confirmed}
+            onClick={run}
+            className="mt-6 min-h-11 w-full rounded-full bg-[var(--action)] text-sm font-semibold text-[var(--action-ink)] disabled:opacity-50"
+          >
+            {fundingSource === "system_free"
+              ? "Use one free generation"
+              : "Confirm personal-key generation"}
+          </button>
           <button
             type="button"
             onClick={saveDraft}
-            className="mt-6 min-h-11 w-full cursor-pointer rounded-full bg-[var(--action)] text-sm font-semibold text-[var(--action-ink)]"
+            className="mt-3 min-h-11 w-full rounded-full border border-white/15 text-sm font-semibold"
           >
             Save reviewed draft
           </button>
+          <p className="mt-4 flex items-center gap-2 text-xs text-[var(--text-faint)]">
+            <ShieldCheck className="size-4" /> No dummy output is created.
+          </p>
         </div>
       </Dialog>
     </main>

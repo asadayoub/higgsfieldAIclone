@@ -134,7 +134,7 @@ describe("live provider contracts (no network)", () => {
       .mockRejectedValueOnce(new Error("raw timeout"));
     const adapter = new ReplicateAdapter("fixture-secret", transport);
     await expect(adapter.submit(configuration, [])).rejects.toThrow(
-      "provider_rejected",
+      "credential_rejected",
     );
     await expect(adapter.submit(configuration, [])).rejects.toThrow(
       "submission_unknown",
@@ -201,16 +201,31 @@ describe("live provider contracts (no network)", () => {
       ),
     ).rejects.toThrow("output_unavailable");
   });
+  it("normalizes an SDK-mislabeled image using its validated signature", async () => {
+    const png = new Uint8Array(24);
+    png.set([137, 80, 78, 71, 13, 10, 26, 10]);
+    new DataView(png.buffer).setUint32(16, 1024);
+    new DataView(png.buffer).setUint32(20, 1024);
+    await expect(
+      retrieveOutput(
+        { bytes: png, mime: "image/jpeg" },
+        "fixture-secret",
+        "image",
+      ),
+    ).resolves.toMatchObject({ mime: "image/png", extension: "png" });
+  });
   it("requires cost consent, supported capabilities and matching references", () => {
     const input = {
       id: "cd890fcb-88d7-4a80-91ce-4fe5b3a5f1d7",
       configuration,
       referencePaths: [],
-      confirmedCost: true,
+      fundingSource: "personal_key",
+      confirmedAllowance: false,
+      confirmedExternalCost: true,
     };
     expect(submissionSchema.safeParse(input).success).toBe(true);
     for (const override of [
-      { confirmedCost: false },
+      { confirmedExternalCost: false },
       { configuration: { ...configuration, quantity: 4 } },
       { referencePaths: ["unexpected"] },
       { configuration: { ...configuration, resolution: "2K" } },
@@ -227,7 +242,7 @@ describe("live provider contracts (no network)", () => {
     ).recipe;
     expect(recipe).toMatchObject({
       prompt: configuration.prompt,
-      model: "Flux 2 Pro",
+      model: "Flux 2 Pro (legacy)",
       resolution: "1 MP",
       quality: "Standard",
       quantity: 1,

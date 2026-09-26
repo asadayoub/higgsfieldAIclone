@@ -1,6 +1,7 @@
 import type { GenerationStatus } from "@/lib/generation/state-machine";
 
-export type ProviderId = "guided" | "openai" | "replicate";
+export type ProviderId =
+  "guided" | "openai" | "replicate" | "openrouter" | "huggingface";
 export type MediaKind = "image" | "video";
 export type ProviderCapabilities = {
   media: readonly MediaKind[];
@@ -11,6 +12,7 @@ export type CredentialCheck = {
   valid: boolean;
   accountLabel?: string;
   error?: string;
+  fundingStatus?: "funded" | "free_tier" | "limit_exhausted" | "unknown";
 };
 export type GenerationRequest = {
   id: string;
@@ -27,7 +29,7 @@ export type ProviderJob = {
 export type GenerationUpdate = {
   status: Extract<
     GenerationStatus,
-    "queued" | "processing" | "complete" | "failed" | "cancelled"
+    "queued" | "processing" | "saving" | "complete" | "failed" | "cancelled"
   >;
   progress?: number;
   outputUrl?: string;

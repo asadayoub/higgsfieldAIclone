@@ -11,8 +11,8 @@ export const studioRecipeVersion = "1";
 const supportedRatios = new Set(studioModels.flatMap((model) => model.ratios));
 const supportedModels = new Set(studioModels.map(({ name }) => name));
 const retiredModelAliases: Record<string, string> = {
-  "Luma Image Beta": "Luma Image v1",
-  "Flux Pro 1.1": "Flux 2 Pro",
+  "Luma Image Beta": "GPT Image 1 Mini",
+  "Flux Pro 1.1": "GPT Image 1 Mini",
   "Veo 3": "Veo 3.1",
 };
 

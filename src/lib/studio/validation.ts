@@ -9,7 +9,7 @@ export const referenceMimeTypes = [
 
 export type StudioConfiguration = {
   media: "image" | "video";
-  execution: "guided" | "live";
+  execution: "live" | "guided";
   modelId: string;
   prompt: string;
   preset: string;
@@ -23,7 +23,7 @@ export type StudioConfiguration = {
 
 export function validateStudioConfiguration(input: StudioConfiguration) {
   const errors: string[] = [];
-  const model = getStudioModel(input.modelId, input.execution);
+  const model = getStudioModel(input.modelId);
   if (!model || model.media !== input.media)
     return ["Choose a compatible model."];
   if (!input.prompt.trim() || input.prompt.length > 1200)
@@ -52,8 +52,6 @@ export function validateStudioConfiguration(input: StudioConfiguration) {
     input.referenceCount > model.maxReferences
   )
     errors.push("Too many references for this model.");
-  if (input.execution === "live" && !model.provider)
-    errors.push("This model is available for guided studies only.");
   return errors;
 }
 

@@ -35,9 +35,9 @@ describe("creation recipes", () => {
       preset: "Noir Frame",
       ratio: "3:4",
     });
-    expect(parsed.recipe?.model).toBe("Luma Image v1");
+    expect(parsed.recipe?.model).toBe("GPT Image 1 Mini");
     expect(parsed.notices).toEqual([
-      "Luma Image Beta was updated to Luma Image v1.",
+      "Luma Image Beta was updated to GPT Image 1 Mini.",
     ]);
   });
 
