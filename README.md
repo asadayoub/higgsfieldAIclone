@@ -48,7 +48,7 @@ Superadmins can add project-owned or explicitly authorized Hugging Face tokens u
 
 System image jobs lease a compatible credential atomically. Selection considers status, model access, priority, concurrency, cooldown, daily local limits, and least-recent use. Authentication failures invalidate a credential, rate limits apply a cooldown, confirmed credit exhaustion removes it from rotation, and an ambiguous submission is never retried. A job makes at most two credential attempts and never silently falls back to OpenRouter.
 
-Hugging Face currently launches image-only with FLUX.1 Schnell and Krea 2 Turbo. Its runs share the same three-per-user UTC allowance as OpenRouter system-funded runs. Provider flags and pool state are disabled or empty after migration, so an administrator must add a token and explicitly enable Hugging Face system images.
+Hugging Face currently launches image-only with fast and quality-focused catalogs. The quality catalog includes Qwen Image 2512, full Z-Image, HiDream I1 Full, and FLUX.1 Dev alongside the established Qwen Image and SDXL options. Its runs share the same three-per-user UTC allowance as OpenRouter system-funded runs. Provider flags and pool state are disabled or empty after migration, so an administrator must add a token, select the models allowed for that credential, and explicitly enable Hugging Face system images. Gated models are not selected by default: the administrator must first accept the model's access terms and confirm that its license fits the intended use.
 
 OpenRouter does not currently have an enabled webhook path in this release. Polling is the authoritative recovery mechanism. `OPENROUTER_WEBHOOK_SECRET` is reserved for a future signed webhook rollout after the provider contract is confirmed.
 

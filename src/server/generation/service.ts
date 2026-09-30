@@ -158,8 +158,8 @@ function isDefinitePreAcceptanceRejection(code: ProviderFailure["code"]) {
   return [
     "provider_rejected",
     "credential_rejected",
-    "payment_required",
     "model_unavailable",
+    "payment_required",
     "rate_limited",
   ].includes(code);
 }
@@ -321,6 +321,7 @@ function huggingFaceCredentialState(code: ProviderFailure["code"]) {
 function huggingFaceRetryable(code: ProviderFailure["code"]) {
   return [
     "credential_rejected",
+    "model_unavailable",
     "payment_required",
     "rate_limited",
     "provider_failed",
@@ -506,7 +507,7 @@ export async function submitRun(
         : await getProviderConnectionSecret(owner, "openrouter");
   const huggingFaceAvailable =
     model.provider === "huggingface"
-      ? await hasAvailableHuggingFaceCredential()
+      ? await hasAvailableHuggingFaceCredential(c.modelId)
       : false;
   if (model.provider === "huggingface" ? !huggingFaceAvailable : !secret)
     throw new Error(

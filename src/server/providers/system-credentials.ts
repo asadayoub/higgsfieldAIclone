@@ -256,9 +256,9 @@ export async function settleSystemCredential(input: {
   if (error) throw new Error("Could not settle the system credential lease.");
 }
 
-export async function hasAvailableHuggingFaceCredential() {
+export async function hasAvailableHuggingFaceCredential(model?: string) {
   const today = new Date().toISOString().slice(0, 10);
-  const { data, error } = await createSupabaseAdminClient()
+  let query = createSupabaseAdminClient()
     .from("system_provider_credentials")
     .select(
       "id,status,cooldown_until,usage_date,requests_used_today,request_limit_daily,active_leases,max_concurrency",
@@ -266,6 +266,8 @@ export async function hasAvailableHuggingFaceCredential() {
     .eq("provider", "huggingface")
     .in("status", ["active", "cooldown"])
     .limit(20);
+  if (model) query = query.contains("allowed_models", [model]);
+  const { data, error } = await query;
   if (error) return false;
   return (data ?? []).some(
     (row) =>

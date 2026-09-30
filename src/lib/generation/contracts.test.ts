@@ -27,6 +27,13 @@ describe("generation funding contract", () => {
     ).toEqual([
       "black-forest-labs/FLUX.1-schnell",
       "krea/Krea-2-Turbo",
+      "Tongyi-MAI/Z-Image-Turbo",
+      "Qwen/Qwen-Image",
+      "stabilityai/stable-diffusion-xl-base-1.0",
+      "Qwen/Qwen-Image-2512",
+      "Tongyi-MAI/Z-Image",
+      "HiDream-ai/HiDream-I1-Full",
+      "black-forest-labs/FLUX.1-dev",
       "recraft/recraft-v4.1-flash",
       "google/gemini-3.1-flash-lite-image",
       "openai/gpt-image-1-mini",

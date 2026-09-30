@@ -29,8 +29,10 @@ function classify(error: unknown): HuggingFaceProviderFailure {
     error instanceof InferenceClientHubApiError
   ) {
     const status = error.httpResponse.status;
-    if (status === 401 || status === 403)
+    if (status === 401)
       return new HuggingFaceProviderFailure("credential_rejected", status);
+    if (status === 403)
+      return new HuggingFaceProviderFailure("model_unavailable", status);
     if (status === 402)
       return new HuggingFaceProviderFailure("payment_required", status);
     if (status === 404)

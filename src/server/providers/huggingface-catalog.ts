@@ -1,6 +1,17 @@
 import "server-only";
 import type { StudioConfiguration } from "@/lib/studio/validation";
 
+type HuggingFaceImageModel = {
+  id: string;
+  provider: "nscale" | "fal-ai";
+  name: string;
+  maxPixels: number;
+  steps: number;
+  tier: "fast" | "quality";
+  access: "public" | "gated";
+  license: string;
+};
+
 export const huggingFaceImageCatalog = [
   {
     id: "black-forest-labs/FLUX.1-schnell",
@@ -8,6 +19,9 @@ export const huggingFaceImageCatalog = [
     name: "FLUX.1 Schnell",
     maxPixels: 1024 * 1024,
     steps: 4,
+    tier: "fast",
+    access: "gated",
+    license: "Apache-2.0",
   },
   {
     id: "krea/Krea-2-Turbo",
@@ -15,8 +29,81 @@ export const huggingFaceImageCatalog = [
     name: "Krea 2 Turbo",
     maxPixels: 1024 * 1024,
     steps: 8,
+    tier: "fast",
+    access: "gated",
+    license: "Krea 2 Community License",
   },
-] as const;
+  {
+    id: "Tongyi-MAI/Z-Image-Turbo",
+    provider: "fal-ai" as const,
+    name: "Z-Image Turbo",
+    maxPixels: 1024 * 1024,
+    steps: 9,
+    tier: "fast",
+    access: "public",
+    license: "Apache-2.0",
+  },
+  {
+    id: "Qwen/Qwen-Image",
+    provider: "fal-ai" as const,
+    name: "Qwen Image",
+    maxPixels: 1024 * 1024,
+    steps: 50,
+    tier: "quality",
+    access: "public",
+    license: "Apache-2.0",
+  },
+  {
+    id: "stabilityai/stable-diffusion-xl-base-1.0",
+    provider: "fal-ai" as const,
+    name: "Stable Diffusion XL 1.0",
+    maxPixels: 1024 * 1024,
+    steps: 30,
+    tier: "quality",
+    access: "public",
+    license: "OpenRAIL++",
+  },
+  {
+    id: "Qwen/Qwen-Image-2512",
+    provider: "fal-ai" as const,
+    name: "Qwen Image 2512",
+    maxPixels: 1024 * 1024,
+    steps: 50,
+    tier: "quality",
+    access: "public",
+    license: "Apache-2.0",
+  },
+  {
+    id: "Tongyi-MAI/Z-Image",
+    provider: "fal-ai" as const,
+    name: "Z-Image",
+    maxPixels: 1024 * 1024,
+    steps: 50,
+    tier: "quality",
+    access: "public",
+    license: "Apache-2.0",
+  },
+  {
+    id: "HiDream-ai/HiDream-I1-Full",
+    provider: "fal-ai" as const,
+    name: "HiDream I1 Full",
+    maxPixels: 1024 * 1024,
+    steps: 50,
+    tier: "quality",
+    access: "public",
+    license: "MIT",
+  },
+  {
+    id: "black-forest-labs/FLUX.1-dev",
+    provider: "fal-ai" as const,
+    name: "FLUX.1 Dev",
+    maxPixels: 1024 * 1024,
+    steps: 50,
+    tier: "quality",
+    access: "gated",
+    license: "FLUX.1 Dev Non-Commercial",
+  },
+] as const satisfies readonly HuggingFaceImageModel[];
 
 export type HuggingFaceModelId = (typeof huggingFaceImageCatalog)[number]["id"];
 

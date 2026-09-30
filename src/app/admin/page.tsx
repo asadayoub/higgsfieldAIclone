@@ -273,11 +273,12 @@ export default async function AdminPage() {
                   type="checkbox"
                   name="allowedModels"
                   value={model.id}
-                  defaultChecked
+                  defaultChecked={model.access === "public"}
                 />
                 {model.name}
                 <span className="font-mono text-[10px] text-[var(--text-faint)]">
-                  {model.provider}
+                  {model.provider} · {model.tier} · {model.license}
+                  {model.access === "gated" ? " · approval required" : ""}
                 </span>
               </label>
             ))}

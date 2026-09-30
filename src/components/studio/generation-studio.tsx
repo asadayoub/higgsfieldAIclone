@@ -476,6 +476,14 @@ export function GenerationStudio({
                       : "OpenRouter"}{" "}
                     · {item.description}
                   </p>
+                  {item.tier === "quality" ? (
+                    <p className="mt-1 text-[10px] text-[var(--action)]">
+                      Quality model
+                      {item.access === "gated"
+                        ? " · gated access and restricted license"
+                        : ""}
+                    </p>
+                  ) : null}
                 </button>
               ))}
             </div>
